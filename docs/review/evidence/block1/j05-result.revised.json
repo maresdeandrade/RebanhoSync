@@ -1,0 +1,797 @@
+{
+  "revision": "2026-11-21",
+  "purpose": "Versão revisada e sanitizada do relatório original; não é reexecução da jornada nem certificação da produção.",
+  "original": {
+    "localRoot": "workspace_original/.work",
+    "file": "j05-result.json",
+    "sha256": "a13c927615648076055b964df22c618d8df29d472412d6c006fae962c7bebc74",
+    "bytes": 65612,
+    "archivedInGit": false
+  },
+  "originalReportedStatus": "executada_com_defeitos_e_lacuna_sensível_por_inspeção_sem_aprovação_integral",
+  "currentAssessment": [
+    {
+      "group": "B1-01",
+      "origins": [
+        "J05-06"
+      ],
+      "title": "Autoridade e gravação concorrente das flags",
+      "status": "corrigido localmente",
+      "acceptance": "block1-security.local.test.mjs; block1-concurrency.local.test.mjs; Chromium: owner desatualizado rejeitado, recarga e gravação válidas preservam chaves."
+    },
+    {
+      "group": "B1-02",
+      "origins": [
+        "J05-01"
+      ],
+      "title": "Persistência do perfil complementar",
+      "status": "corrigido localmente",
+      "acceptance": "PerfilPersistence; SQL RLS; Chromium primeiro save, update, reload, nova sessão, identidade estrangeira, rede; zero linha simulado na fronteira."
+    },
+    {
+      "group": "B1-03",
+      "origins": [
+        "J05-03"
+      ],
+      "title": "Horário de silêncio inválido",
+      "status": "corrigido localmente",
+      "acceptance": "PerfilPersistence; sanitaryReminders; Chromium: intervalo inválido sem save e 22:00–06:00 persistido/recarregado."
+    },
+    {
+      "group": "B1-07",
+      "origins": [
+        "J04-F06",
+        "J05-02"
+      ],
+      "title": "Tratamento de erros estruturados",
+      "status": "corrigido localmente",
+      "acceptance": "PerfilPersistence erro estruturado e rede; regressão J04 de mensagem/retry."
+    },
+    {
+      "group": "B1-15",
+      "origins": [
+        "J05-04"
+      ],
+      "title": "Tema Sistema durante mudança do SO",
+      "status": "aberto; não bloqueante neste recorte",
+      "acceptance": "Futuro: alternar prefers-color-scheme com página aberta; evidência J05 preservada, sem repetir agora."
+    },
+    {
+      "group": "B1-16",
+      "origins": [
+        "J02-04",
+        "J03-U01",
+        "J03-S07",
+        "J05-05"
+      ],
+      "title": "Descarte de rascunhos entre navegação, recarga e fazenda",
+      "status": "candidato; consolidado sem implementação",
+      "acceptance": "Futuro: navegar/voltar/trocar fazenda, manter edição ou descartar explicitamente, sem submissão/duplicação."
+    }
+  ],
+  "assessmentNote": "Estado das correções locais conforme matriz consolidada do Bloco 1. O conteúdo abaixo preserva o relato original, com redação sanitizada, sem substituir falhas históricas por resultados novos. Integração e publicação devem ser verificadas separadamente no PR306.",
+  "selection": "Campos narrativos, cenários, achados, recomendações e limites selecionados; identidade, sessões, inputs, dados persistidos, payloads e logs completos excluídos.",
+  "content": {
+    "journey": "J05",
+    "title": "Validação funcional de Configurações, Perfil e Preferências",
+    "date": "2026-11-20",
+    "timezone": "America/Sao_Paulo",
+    "created_at": "2026-11-21T02:18:23.631Z",
+    "mode": "DIAGNOSIS / validação funcional local",
+    "baseline": {
+      "mode": "DIAGNOSIS / local functional validation",
+      "branch": "codex/j04-invites-members-auth",
+      "head": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+      "worktree": "[caminho local omitido]",
+      "original_artifact_root": "[caminho local omitido]",
+      "frontend": "http://127.0.0.1:4173/",
+      "backend": "http://127.0.0.1:54321/",
+      "appliedMigration": [
+        {
+          "version": "20261120231349"
+        }
+      ],
+      "frontendProof": {
+        "patchSelectionPresent": true,
+        "backendOrigins": [
+          "http://127.0.0.1:54321/"
+        ],
+        "timeZone": "America/Sao_Paulo"
+      },
+      "viewportRequired": [
+        {
+          "width": 1440,
+          "height": 900
+        },
+        {
+          "width": 390,
+          "height": 844
+        }
+      ],
+      "scope": "J05 only; preserved uncommitted J04 patch; no J04 recertification",
+      "workerSessionRecovery": "Existing identity authenticated by local magiclink as setup only; no credentials changed and no secret written to artifact"
+    },
+    "methods": {
+      "ui_first": true,
+      "real_authenticated_roles": true,
+      "code_inspection": "Somente para explicar comportamentos observados, fonte/escopo das preferências e diferença de autoridade de flags na UI.",
+      "synthetic_data_only": true,
+      "service_role": "Usada exclusivamente para gerar link local temporário da identidade existente; nunca para substituir operação funcional testada.",
+      "technical_negative_test": "Cliente Supabase real da sessão cowboy enviou PATCH no-op para fazenda e preferências de outro usuário; resultado0 linhas. Evidência separada das ações UI.",
+      "permission_flag_probe": "Inspeção de policies, grants, triggers, CHECK e rules instalados; nenhuma alteração de flags tentada.",
+      "network_failure": "Interceptação seletiva somente de PATCH de perfil ou fazenda; removida após teste.",
+      "not_repeated": [
+        "J01/J02/J03/J04",
+        "certificação de baseline",
+        "suítes globais",
+        "testes da correção J04"
+      ]
+    },
+    "scenario_count": 10,
+    "scenarios": [
+      {
+        "id": "J05-S01",
+        "objective": "Descobrir e distinguir Perfil, Configurações e cadastro da propriedade",
+        "path": "Meu Perfil; Configurações > Ajustes; Editar cadastro da fazenda; Mais no mobile",
+        "result": "executado_com_oportunidades",
+        "observed": "Perfil concentra dados pessoais e preferências. Configurações contém regras da fazenda; cadastro é outra tela. /categorias e /categorias/novo redirecionam para /configuracoes, sem cadastro de categoria customizada nesta baseline.",
+        "evidence": [
+          "02-profile-empty-fields",
+          "03-preferences-desktop",
+          "15-farm-settings-desktop",
+          "21-edit-farm-optional-fields",
+          "22-categorias-redirect",
+          "23-categoria-nova-redirect",
+          "39-mobile-navigation-more"
+        ],
+        "findings": [
+          "J05-08",
+          "J05-09"
+        ]
+      },
+      {
+        "id": "J05-S02",
+        "objective": "Editar e restaurar nome/telefone sintéticos, verificar identidade e perfil",
+        "path": "/perfil > Perfil > Salvar perfil > recarregar",
+        "result": "falhou_perfil_nao_persiste",
+        "observed": "As duas contas têm nome/telefone no cadastro Auth, mas user_profiles não tem linhas e a tela mostra ambos vazios. Proprietário digitou Gestor Sintético J05 e [telefone omitido]: PATCH204, toast de sucesso, zero linhas; recarga voltou vazio. E-mail desabilitado. Falha de rede mantém rascunho, exibe [object Object]. Foto existe na UI; upload não executado porque o perfil não persiste, evitando arquivo órfão.",
+        "evidence": [
+          "04-profile-save-success",
+          "05-profile-not-persisted",
+          "06-profile-network-error",
+          "24-worker-profile-metadata-absent",
+          "35-profile-mobile"
+        ],
+        "findings": [
+          "J05-01",
+          "J05-02"
+        ],
+        "notDemonstrated": [
+          "persistência/ restauração de nome salvo",
+          "upload e persistência de avatar"
+        ]
+      },
+      {
+        "id": "J05-S03",
+        "objective": "Sistema, Claro e Escuro; persistência e reabertura",
+        "path": "/perfil > Preferencias > Tema > Salvar preferencias",
+        "result": "executado_com_limitação",
+        "observed": "Claro/Escuro aplicam após salvar; Escuro permaneceu após recarga e nova aba. Sistema usa aparência do dispositivo ao carregar, mas mudança simulada com tela aberta não aplicou em6s; recarga aplicou. Teste inicial inconclusivo foi substituído por polling controlado.",
+        "evidence": [
+          "07-dark-theme-saved",
+          "08-dark-config-reopened",
+          "09-light-theme",
+          "33-system-os-change-not-applied",
+          "34-system-dark-after-reload",
+          "37-preferences-mobile-dark",
+          "50-mobile-light-preferences"
+        ],
+        "findings": [
+          "J05-04"
+        ]
+      },
+      {
+        "id": "J05-S04",
+        "objective": "Preferências pessoais de notificações e horários",
+        "path": "/perfil > Preferencias > Notificacoes > Salvar preferencias > recarregar",
+        "result": "executado_com_defeito",
+        "observed": "Gerais OFF persistiu e ocultou filhos; Agenda OFF persistiu. Horário válido22:00–06:00, críticos OFF e antecedência3 dias persistiram; última janela não pode ser desmarcada. Início vazio foi aceito/salvo e após recarga silêncio apareceu OFF. Dois controles sanitários ficam desabilitados no modo Essencial sem explicação contextual. Não houve entrega de aviso demonstrada.",
+        "evidence": [
+          "11-notifications-disabled-persisted",
+          "12-incomplete-quiet-hours-saved",
+          "13-incomplete-quiet-hours-lost",
+          "14-valid-notification-preferences",
+          "38-preferences-mobile-bottom",
+          "53-mobile-preferences-settled"
+        ],
+        "findings": [
+          "J05-03",
+          "J05-07"
+        ],
+        "notDemonstrated": [
+          "entrega push/e-mail/agendamento",
+          "disparo sanitário in-app com Agenda populada"
+        ]
+      },
+      {
+        "id": "J05-S05",
+        "objective": "Unidade de peso da Horizonte, persistência e isolamento",
+        "path": "/configuracoes > Arroba > Salvar unidade > recarregar > Quilograma(kg) > salvar",
+        "result": "executado_no_escopo_de_configuração",
+        "observed": "Owner alterou Horizonte kg->arroba->kg. Arroba persistiu; Controle permaneceu intacta durante teste. Campos de configuração exibiram180kg como12arrobas; apenas essa apresentação foi observada. Nenhum animal/pesagem foi criado; relatórios/fichas/eventos não foram certificados.",
+        "evidence": [
+          "16-arroba-saved",
+          "17-arroba-persisted",
+          "19-lifecycle-restored",
+          "20-controle-config-isolated"
+        ],
+        "findings": []
+      },
+      {
+        "id": "J05-S06",
+        "objective": "Examinar classificação, transições e categorias",
+        "path": "/configuracoes > Regras de estagio de vida",
+        "result": "executado_com_limitações_de_UX",
+        "observed": "Base Idade/Peso, Manual/Híbrido/Automático e9 entradas numéricas. Defaults Idade, Manual, neonatal7d, desmame210d/180kg; macho candidato450d/320kg; macho adulto731d/450kg; fêmea adulta901d/300kg. Neo7->8 persistiu; restaurado7. Base Peso alterada apenas como rascunho e revertida. Categorias são Bezerra/Novilha/Vaca e Bezerro/Garrote/Boi/Touro. Modos de transição não foram aplicados, fila/histórico não exercidos.",
+        "evidence": [
+          "15-farm-settings-desktop",
+          "18-lifecycle-safe-change",
+          "19-lifecycle-restored",
+          "41-config-mobile-lifecycle"
+        ],
+        "findings": [
+          "J05-08"
+        ]
+      },
+      {
+        "id": "J05-S07",
+        "objective": "Escopo pessoal versus por propriedade",
+        "path": "Trocar fazenda > selecionar Horizonte/Controle; Perfil e Configurações",
+        "result": "executado_no_escopo_testado",
+        "observed": "Unidade alterada numa fazenda não alterou a outra. Tema do colaborador acompanhou troca H->C e não alterou tema do owner. Município/CEP/manejo continuaram vazios. Cadastro Controle preservou CTRL-J03,SP,25ha,Leite; HorizonteMG,100ha,Corte. Não foi salvo o cadastro estrutural nem preenchido município artificialmente.",
+        "evidence": [
+          "20-controle-config-isolated",
+          "21-edit-farm-optional-fields",
+          "28-personal-theme-cross-farm",
+          "persisted-before.json",
+          "persisted-after.json"
+        ],
+        "findings": [
+          "J05-09"
+        ]
+      },
+      {
+        "id": "J05-S08",
+        "objective": "Owner Horizonte, cowboy Horizonte, manager Controle; servidor real",
+        "path": "Configurações e cadastro em duas sessões reais; verificação técnica negativa do cliente autenticado",
+        "result": "restrição_básica_observada_lacuna_sensível_por_inspeção",
+        "observed": "Owner e manager salvaram/restauraram unidade pela UI. Cowboy recebeu somente leitura e cadastro negado. PATCH no-op real como cowboy na Horizonte retornou[] e não alterou timestamps; tentativa na preferência do owner retornou[]. Controles de flags bloqueados ao manager na UI, mas policy/grants/triggers instalados permitem UPDATE irrestrito de metadata por manager; lacuna demonstrada por inspeção, não explorada.",
+        "evidence": [
+          "25-manager-controle-save",
+          "26-cowboy-config-readonly",
+          "27-cowboy-edit-farm-denied",
+          "45-manager-security-readonly",
+          "47-cowboy-config-mobile",
+          "authenticated-negative-permissions.json",
+          "farm-authority-inspection.json"
+        ],
+        "findings": [
+          "J05-06"
+        ],
+        "notDemonstrated": [
+          "mutação das flags pelo manager — proibida e não executada"
+        ]
+      },
+      {
+        "id": "J05-S09",
+        "objective": "Rascunhos, saída, troca, recarga, retorno e erro",
+        "path": "neonatal9 sem salvar > Meu Perfil > Voltar; unidade rascunho > trocar fazenda; perfil rascunho > recarregar; falha seletivaPATCH > tentar novamente",
+        "result": "executado_com_perda_de_rascunho_conhecida",
+        "observed": "Rascunhos descartados sem confirmação ao sair, voltar, trocar fazenda e recarregar; continuidade do achado J02/J03. Erro de rede da unidade foi compreensível, preservou seleção e permitiu retry; retry efetivamente salvou e kg foi restaurado. Perfil também preservou rascunho no erro, com mensagem ilegível.",
+        "evidence": [
+          "29-unsaved-lifecycle",
+          "30-unsaved-lifecycle-discarded",
+          "31-unsaved-farm-switch",
+          "32-unit-network-error",
+          "48-profile-mobile-draft",
+          "49-profile-mobile-draft-discarded"
+        ],
+        "findings": [
+          "J05-02",
+          "J05-05"
+        ]
+      },
+      {
+        "id": "J05-S10",
+        "objective": "Desktop1440x900 e mobile390x844",
+        "path": "Perfil/Preferências, navegação Mais, Configurações, Cadastro, permissões",
+        "result": "amostras_responsivas_executadas",
+        "observed": "Abas, campos, opções, botões e scroll utilizáveis nas amostras, sem overflow horizontal nas390x844/1440x900. Formulários operacionais longos exigem bastante scroll; não foi usado aparelho físico/teclado virtual. Captura38 inclui estado transitório Salvando; captura53 confirma estado estabilizado. Capturas08/09 têm viewport intermediário de nova aba, não são usadas como evidência de1440x900.",
+        "evidence": [
+          "35-profile-mobile",
+          "36-preferences-mobile-top",
+          "37-preferences-mobile-dark",
+          "40-config-mobile-top",
+          "41-config-mobile-lifecycle",
+          "42-config-mobile-bottom",
+          "43-edit-farm-mobile-top",
+          "44-edit-farm-mobile-advanced",
+          "46-manager-edit-mobile",
+          "47-cowboy-config-mobile",
+          "53-mobile-preferences-settled"
+        ],
+        "findings": [
+          "J05-08"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "id": "J05-01",
+        "scenario": "J05-S02",
+        "type": "defeito_confirmado",
+        "severity": "HIGH",
+        "screen": "/perfil",
+        "expected": "Salvar dados pessoais de conta existente sem perfil complementar, ou explicar falha; informar sucesso somente com persistência.",
+        "observed": "UPDATE user_profiles retornou204/sucesso, mas zero linhas existiam; nome/telefone voltaram vazios e não houve linha após recarga.",
+        "cause": "loadProfile consulta user_profiles e ignora erro da consulta; save usa update filtrado por user_id, sem inserir linha ausente nem conferir linhas afetadas. Metadados de cadastro não são carregados nesse formulário.",
+        "reproduction": [
+          "Conta owner original sem user_profiles",
+          "Preencher nome Gestor Sintético J05 e telefone [telefone omitido]",
+          "Salvar perfil: observar Sucesso",
+          "Recarregar: campos vazios; leitura local confirma0 linhas"
+        ],
+        "impact": "Usuário acredita ter atualizado contato/identificação; bloqueia manutenção autônoma de perfil e persistência de avatar.",
+        "evidence": [
+          "04-profile-save-success.png",
+          "05-profile-not-persisted.png",
+          "persisted-before.json",
+          "persisted-after.json"
+        ],
+        "source": [
+          "src/pages/Perfil.tsx:86",
+          "src/pages/Perfil.tsx:152"
+        ],
+        "recommendation": "Permitir criação/atualização do próprio perfil pelo contrato existente (por exemplo upsert com user_id) e confirmar persistência; tratar ausência e erro de carga separadamente. Não criar identidade paralela nem usar perfil como prova de Auth.",
+        "priorRelation": "Ausência de perfil já registrada na J04; falso sucesso do salvamento demonstrado agora."
+      },
+      {
+        "id": "J05-02",
+        "scenario": "J05-S02/J05-S09",
+        "type": "defeito_confirmado",
+        "severity": "MEDIUM",
+        "screen": "/perfil",
+        "expected": "Mensagem compreensível e recuperável ao falhar requisição de salvamento.",
+        "observed": "Falha seletiva da requisição PATCH exibiu Erro[object Object]; rascunho foi preservado.",
+        "cause": "catch converte objeto PostgREST com String(error), não extrai message.",
+        "reproduction": [
+          "Nome Falha Sintética J05 no formulário",
+          "Interceptar somente PATCH /rest/v1/user_profiles e abortar failed",
+          "Salvar perfil",
+          "Observar [object Object]; retirar interceptação e recarregar para descartar rascunho"
+        ],
+        "impact": "Usuário não entende causa nem próximo passo, embora formulário mantenha dados.",
+        "evidence": [
+          "06-profile-network-error.png"
+        ],
+        "source": [
+          "src/pages/Perfil.tsx:174",
+          "src/pages/Perfil.tsx:217"
+        ],
+        "recommendation": "Reutilizar tratamento estruturado já existente no patch J04 e orientar nova tentativa.",
+        "priorRelation": "Mesmo padrão de erro de J04-F06; nova superfície Perfil, sem refazer J04."
+      },
+      {
+        "id": "J05-03",
+        "scenario": "J05-S04",
+        "type": "defeito_confirmado",
+        "severity": "MEDIUM",
+        "screen": "/perfil > Preferencias",
+        "expected": "Horário de silêncio ativado deve exigir início/fim válidos e explicar horários iguais/incompletos.",
+        "observed": "Início vazio e fim06:00 foram persistidos com toast de sucesso. Após recarga, silêncio ficou OFF e início voltou22:00.",
+        "cause": "Save persiste quiet_hours sem validar os dois horários; resolver só aceita ambos preenchidos e devolve null para início vazio.",
+        "reproduction": [
+          "Ativar Horario de silencio",
+          "Limpar Inicio, manter Fim06:00",
+          "Salvar e observar sucesso",
+          "Recarregar Preferencias: controle desligado"
+        ],
+        "impact": "Configuração parece aceita mas é silenciosamente descartada na leitura; usuário pode esperar silêncio que não ocorrerá.",
+        "evidence": [
+          "12-incomplete-quiet-hours-saved.png",
+          "13-incomplete-quiet-hours-lost.png",
+          "observations.json"
+        ],
+        "source": [
+          "src/pages/Perfil.tsx:195",
+          "src/lib/notifications/sanitaryReminders.ts:82"
+        ],
+        "recommendation": "Validar completude/formato antes de salvar; explicar intervalo atravessando meia-noite e tratar início=fim explicitamente. Manter erro junto aos campos."
+      },
+      {
+        "id": "J05-04",
+        "scenario": "J05-S03",
+        "type": "defeito_confirmado_de_atualização_visual",
+        "severity": "LOW",
+        "screen": "/perfil > Tema Sistema",
+        "expected": "Tema Sistema acompanhar mudança da preferência do sistema com página aberta.",
+        "observed": "Com theme=system, matchMedia dark=true e classe light permaneceu após polling6s; recarga passou a dark.",
+        "cause": "applyTheme consulta matchMedia ao executar, sem listener change no contrato inspecionado; nova carga reaplica.",
+        "reproduction": [
+          "Persistir Sistema com emulação light",
+          "Emular prefers-color-scheme:dark sem recarga",
+          "Esperar até6s: classe light, media dark=true",
+          "Recarregar: classe dark"
+        ],
+        "impact": "Aparência pode ficar divergente da preferência do dispositivo até atualização posterior.",
+        "evidence": [
+          "33-system-os-change-not-applied.png",
+          "34-system-dark-after-reload.png"
+        ],
+        "source": [
+          "src/lib/theme.ts:8",
+          "src/hooks/useAuth.tsx:342"
+        ],
+        "recommendation": "Escutar alteração da media query quando Sistema estiver selecionado, reaproveitando applyTheme e removendo listener na limpeza.",
+        "qualification": "Mudança do sistema foi simulada no navegador; não houve alteração do tema real do Windows. Observação inicial assíncrona inconclusiva não usada como conclusão."
+      },
+      {
+        "id": "J05-05",
+        "scenario": "J05-S09",
+        "type": "defeito_de_recuperação_em_continuidade",
+        "severity": "MEDIUM",
+        "screen": "Perfil e Configurações",
+        "expected": "Rascunhos relevantes devem ser preservados ou usuário avisado antes de descartar.",
+        "observed": "Neonatal9 não salvo virou7 após sair/Voltar; unidade rascunho foi descartada após troca; nome rascunho mobile sumiu após recarga. Nenhum diálogo de confirmação.",
+        "reproduction": [
+          "Alterar neonatal7->9 sem salvar",
+          "Ir a Meu Perfil e usar Voltar",
+          "Reabrir configuração:7; repetir unidade e troca de fazenda, ou nome e recarga"
+        ],
+        "impact": "Perda de trabalho e dúvida sobre o que foi aplicado; maior custo em formulário longo/mobile.",
+        "evidence": [
+          "29-unsaved-lifecycle.png",
+          "30-unsaved-lifecycle-discarded.png",
+          "31-unsaved-farm-switch.png",
+          "48-profile-mobile-draft.png",
+          "49-profile-mobile-draft-discarded.png"
+        ],
+        "recommendation": "Consolidar a recuperação de rascunhos já identificada em J02/J03; guardar ou confirmar descarte somente quando houver alteração real.",
+        "priorRelation": "Continuação do problema de rascunhos de J02/J03; não contabilizar como nova causa global."
+      },
+      {
+        "id": "J05-06",
+        "scenario": "J05-S08",
+        "type": "lacuna_de_autorização_confirmada_por_inspeção_do_contrato_ativo_não_explorada",
+        "severity": "BLOCKER",
+        "screen": "/editar-fazenda > Segurança dos registros",
+        "expected": "Flags identificadas como somente owner devem ter essa restrição no servidor, preservando edições legítimas de manager.",
+        "observed": "Manager tem flags desabilitadas na UI, mas authenticated possui UPDATE em metadata; policy fazendas_update_owner_manager valida apenas papel owner/manager, sem comparação de campos. Triggers de fazendas não fazem guarda das flags; não há CHECK/rule para isso. Manager real salvou metadata de unidade no mesmo caminho.",
+        "cause": "A diferenciação de autoridade entre owner e manager para eventos_rollout.strict_rules_enabled/strict_anti_teleporte existe na UI; UPDATE direto no JSON não aplica esse limite.",
+        "reproduction": [
+          "Entrar como manager original na Controle",
+          "Abrir editar-fazenda: flags somente leitura",
+          "Conferir policy/grants/triggers/CHECK/rules instalados em farm-authority-inspection.json",
+          "Não alterar flags: exploração deliberadamente não executada por restrição da jornada"
+        ],
+        "impact": "Contrato de exclusividade do owner pode ser contornado em requisição autenticada de manager, inclusive por cliente que envie metadata antigo. Nenhuma proteção foi efetivamente desabilitada neste teste.",
+        "evidence": [
+          "45-manager-security-readonly.png",
+          "25-manager-controle-save.png",
+          "farm-authority-inspection.json"
+        ],
+        "source": [
+          "src/pages/EditarFazenda.tsx:102",
+          "src/pages/EditarFazenda.tsx:200",
+          "src/pages/EditarFazenda.tsx:222",
+          "active policy fazendas_update_owner_manager"
+        ],
+        "recommendation": "Impor no servidor a autoridade de owner para alteração efetiva das flags, preservando os demais parâmetros que manager pode editar; acrescentar negativos e casos de estado desatualizado numa correção autorizada.",
+        "notExecuted": "Nenhum PATCH com mudança de flags, nenhum bypass explorado e nenhuma mudança em RLS/RPC/migration."
+      }
+    ],
+    "confirmed_functional_defects": [
+      "J05-01",
+      "J05-02",
+      "J05-03",
+      "J05-04"
+    ],
+    "ux_opportunities": [
+      {
+        "id": "J05-07",
+        "type": "melhoria_opcional",
+        "screen": "Perfil > Notificações",
+        "difficulty": "Não informa canal/condição de entrega; Próximo procedimento e Janela antecipada desabilitados sem explicação do modo Essencial.",
+        "proposal": "Explicar avisos dentro do app, condições de emissão, horário local e por que opções estão desabilitadas; não prometer push/e-mail.",
+        "benefit": "Alinha expectativa do operador com efeito real e reduz tentativas em controle indisponível.",
+        "priority": "P1",
+        "effort": "baixo",
+        "evidence": [
+          "03-preferences-desktop",
+          "14-valid-notification-preferences",
+          "38-preferences-mobile-bottom"
+        ],
+        "source": "src/components/notifications/SanitaryNotificationManager.tsx:75"
+      },
+      {
+        "id": "J05-08",
+        "type": "melhoria_opcional",
+        "screen": "Configurações > Regras de estágio",
+        "difficulty": "Nove valores numéricos e modos Manual/Híbrido/Automático apresentados sem explicar consequências, origem dos padrões ou momento de aplicação; formulário extenso no mobile.",
+        "proposal": "Separar parâmetros usuais de avançados; explicar intenção de cada modo e apresentar resumo das mudanças antes de aplicar. Mostrar origem dos padrões, sem presumir que variem por produção ou raça sem regra aprovada.",
+        "benefit": "Reduz alterações por tentativa e risco de interpretação de estado derivado como fato.",
+        "priority": "P1",
+        "effort": "médio",
+        "evidence": [
+          "15-farm-settings-desktop",
+          "41-config-mobile-lifecycle",
+          "42-config-mobile-bottom"
+        ]
+      },
+      {
+        "id": "J05-09",
+        "type": "melhoria_opcional",
+        "screen": "Perfil/Configurações/Cadastro",
+        "difficulty": "Perfil pessoal mostra cabeçalho de fazenda e badge Essencial; papel do usuário não está explícito no formulário; Edicao liberada não informa autoridade exata.",
+        "proposal": "Identificar Preferências da sua conta e Parâmetros da Fazenda X; exibir papel derivado do vínculo e uma frase sobre alcance de cada salvamento.",
+        "benefit": "Evita esperar que tema seja por fazenda ou que parâmetros da fazenda sejam pessoais.",
+        "priority": "P1",
+        "effort": "baixo",
+        "evidence": [
+          "03-preferences-desktop",
+          "20-controle-config-isolated",
+          "28-personal-theme-cross-farm",
+          "45-manager-security-readonly"
+        ]
+      },
+      {
+        "id": "J05-10",
+        "type": "melhoria_opcional",
+        "screen": "Navegação",
+        "difficulty": "Configurações > Ajustes, atalho do cabeçalho e Editar cadastro dividem conteúdo relacionado; rotas Categorias silenciosamente levam ao mesmo formulário.",
+        "proposal": "Uniformizar nomes e indicar no destino onde ficam categorias e cadastro; manter um caminho principal com atalhos coerentes.",
+        "benefit": "Melhora descoberta sem introduzir novo cadastro de categoria.",
+        "priority": "P2",
+        "effort": "baixo",
+        "evidence": [
+          "21-edit-farm-optional-fields",
+          "22-categorias-redirect",
+          "23-categoria-nova-redirect",
+          "39-mobile-navigation-more"
+        ]
+      },
+      {
+        "id": "J05-11",
+        "type": "melhoria_opcional",
+        "screen": "Cadastro > Segurança",
+        "difficulty": "Rollout editavel, Owner pode ajustar e validação forte exigem conhecimento técnico e aparecem junto de dados comuns.",
+        "proposal": "Agrupar segurança em seção avançada com linguagem operacional e consequência de cada proteção; mostrar restrição de autoridade sem expor detalhes de implementação.",
+        "benefit": "Reduz mudanças acidentais e melhora compreensão do gestor; depende de corrigir J05-06 no servidor.",
+        "priority": "P1",
+        "effort": "baixo/médio",
+        "evidence": [
+          "44-edit-farm-mobile-advanced",
+          "45-manager-security-readonly"
+        ]
+      },
+      {
+        "id": "J05-12",
+        "type": "melhoria_opcional",
+        "screen": "Formulários extensos mobile",
+        "difficulty": "Botões no final demandam bastante scroll e não há resumo do que foi alterado.",
+        "proposal": "Indicar alterações pendentes junto à seção e oferecer resumo/atalho para salvar, respeitando navegação inferior e sem duplicar comandos.",
+        "benefit": "Reduz esforço de revisão e incerteza sobre aplicação dos parâmetros.",
+        "priority": "P2",
+        "effort": "médio",
+        "evidence": [
+          "42-config-mobile-bottom",
+          "53-mobile-preferences-settled"
+        ]
+      }
+    ],
+    "additional_data_candidates": [
+      {
+        "information": "Unidade de peso",
+        "availability": "Já implementada por fazenda: kg/arroba",
+        "problem": "Gestor e operador precisam reconhecer a unidade usada nos parâmetros.",
+        "source": "fazendas.metadata.measurement_preferences.weight_unit; formatador de peso existente",
+        "persistence": "Já necessária no escopo da fazenda; não criar outra preferência pessoal concorrente.",
+        "scope": "fazenda",
+        "derivation": "Rótulos e apresentação derivados da configuração atual.",
+        "benefit": "Leitura consistente; melhora simples explicando o alcance.",
+        "complexityRisk": "Unidade pessoal em paralelo geraria conflito com parâmetros da propriedade; conversão de fatos não certificada.",
+        "userValidation": "Validar clareza de arroba com operadores e responsáveis técnicos.",
+        "recommendation": "Manter fonte atual, explicar unidade e representação; não duplicar."
+      },
+      {
+        "information": "Formato regional de datas e horários",
+        "availability": "date_format e number_format existem em user_settings; controles ausentes na interface observada. Fuso do navegador America/Sao_Paulo.",
+        "problem": "Entender datas e horário de silêncio, especialmente em dispositivos/regiões diferentes.",
+        "source": "user_settings.date_format/number_format; Intl e fuso do dispositivo",
+        "persistence": "Preferência de formato só se houver necessidade; fuso atual pode ser derivado, sem nova tabela.",
+        "scope": "pessoal para formato; dispositivo para horário local atual",
+        "derivation": "Fuso e locale do dispositivo podem ser mostrados em ajuda contextual.",
+        "benefit": "Evita dúvida sobre hora aplicada.",
+        "complexityRisk": "Criar configuração de fuso sem agendamento real acrescentaria conflito e complexidade.",
+        "userValidation": "Confirmar uso multirregional/multifuso antes de expor controles.",
+        "recommendation": "Mostrar referência de horário local; avaliar edição dos campos existentes somente com evidência de necessidade."
+      },
+      {
+        "information": "Notificações por categoria",
+        "availability": "Gerais, Agenda, quatro categorias sanitárias, silêncio e dias já persistidos",
+        "problem": "Usuário precisa entender o que recebe e em qual canal; dois controles indisponíveis no modo Essencial.",
+        "source": "user_settings.notifications; SanitaryNotificationManager e plano sanitário derivados da Agenda",
+        "persistence": "Já existe por usuário; canal/disponibilidade podem ser derivados da capacidade real.",
+        "scope": "pessoal, aplicado aos contextos das fazendas vinculadas",
+        "derivation": "Mensagens, pendências e opções disponíveis derivam da Agenda/modo; não criar fatos.",
+        "benefit": "Menos ruído e expectativa correta.",
+        "complexityRisk": "Não adicionar controle de push/email antes de haver canal demonstrável; evitar granularidade excessiva.",
+        "userValidation": "Validar quais alertas ajudam gestor e operador em rotina real.",
+        "recommendation": "Melhorar explicações e validação existentes; não aprovar novos canais por hipótese."
+      },
+      {
+        "information": "Offline e sincronização",
+        "availability": "Em dia no cabeçalho; links Reconciliação; sync_prefs já tem wifi_only, background_sync e max_batch_size, sem controles pessoais na superfície observada.",
+        "problem": "Operador precisa saber se pode continuar e se há pendências a confirmar.",
+        "source": "Fila/estado local, saúde de sincronização e user_settings.sync_prefs existentes",
+        "persistence": "Estado/fila derivados não precisam nova persistência; uma opção de rede só se houver regra operacional comprovada.",
+        "scope": "dispositivo para conexão/fila; eventualmente pessoal para opção já existente",
+        "derivation": "Preferir mostrar estado, última confirmação e pendências a criar novos campos.",
+        "benefit": "Confiança no trabalho de campo e recuperação.",
+        "complexityRisk": "Expor lote/tamanho/background como knobs técnicos pode comprometer continuidade e sugerir execução em background garantida.",
+        "userValidation": "Testar linguagem e necessidade real em dispositivos de campo.",
+        "recommendation": "Priorizar transparência de estado e recuperação; não expor ajustes técnicos por rotina."
+      },
+      {
+        "information": "Apresentação de indicadores",
+        "availability": "Resumo/Dashboard existem como atalhos; nenhuma preferência de layout/indicadores no Perfil inspecionado.",
+        "problem": "Gestor e operador podem precisar de prioridades visuais distintas.",
+        "source": "Indicadores atuais derivados dos domínios e contexto do usuário",
+        "persistence": "Não necessária inicialmente; só persistir seleção se uso recorrente justificar.",
+        "scope": "pessoal ou dispositivo, sem mudar fatos/KPIs",
+        "derivation": "Conteúdo deve continuar derivado das mesmas fontes atuais.",
+        "benefit": "Reduz informação irrelevante na rotina.",
+        "complexityRisk": "Configurações demais e métricas duplicadas criam divergência; não alterar fórmulas.",
+        "userValidation": "Observar decisões reais e indicadores mais consultados por persona.",
+        "recommendation": "Hipótese para validação com usuários; não adicionar campos agora."
+      },
+      {
+        "information": "Visibilidade do papel atual",
+        "availability": "Membership/role atual já disponível e evidenciado em J04/J05; Configurações mostra apenas edição/leitura.",
+        "problem": "Usuário não entende por que consegue editar numa fazenda e só consultar em outra.",
+        "source": "user_fazendas.role e contexto autenticado atual",
+        "persistence": "Nenhuma nova persistência.",
+        "scope": "usuário + fazenda (vínculo existente)",
+        "derivation": "Papel e capacidades derivam do vínculo; autorização continua no servidor.",
+        "benefit": "Alto benefício com baixo esforço de apresentação.",
+        "complexityRisk": "Exibir cache antigo como autoridade definitiva; não criar role paralelo.",
+        "userValidation": "Validar rótulos Proprietário/Gerente/Operação.",
+        "recommendation": "Priorizar exibição derivada do papel e alcance das ações."
+      },
+      {
+        "information": "Identificação da fazenda afetada",
+        "availability": "Nome no cabeçalho e badge em Configurações; Perfil é pessoal apesar do cabeçalho de fazenda.",
+        "problem": "Evitar alteração no contexto errado ou expectativa de que tema seja por fazenda.",
+        "source": "active_fazenda_id + fazendas.nome; contexto pessoal de user_settings",
+        "persistence": "Nenhuma nova persistência.",
+        "scope": "fazenda para parâmetros; pessoal para preferências",
+        "derivation": "Rótulos e resumo do salvamento derivados do contexto atual.",
+        "benefit": "Alto benefício e baixo esforço.",
+        "complexityRisk": "Confundir campo visual com proteção de tenant; cabeçalho não substitui checagem de autoridade.",
+        "userValidation": "Testar entendimento durante alternância rápida entre propriedades.",
+        "recommendation": "Priorizar textos de escopo junto ao título e ao salvamento."
+      },
+      {
+        "information": "Ajuda contextual",
+        "availability": "Rótulos existem; explicações limitadas sobre padrões, transições, controles indisponíveis e notificações.",
+        "problem": "Operador depende de conhecimento prévio de classificação e efeitos dos parâmetros.",
+        "source": "Contratos implementados e referências técnicas existentes; estado atual para exemplos",
+        "persistence": "Não requer novo dado persistido.",
+        "scope": "conteúdo contextual por tela/capacidade",
+        "derivation": "Disponibilidade e unidade podem compor ajuda; recomendações não viram fatos.",
+        "benefit": "Alto benefício relativo ao esforço de copy/organização.",
+        "complexityRisk": "Explicação incorreta pode aparentar validação técnica; preservar distinção intenção/estado/histórico.",
+        "userValidation": "Validar vocabulário e exemplos com gestores e operadores reais.",
+        "recommendation": "Priorizar explicações curtas, efeitos e origem dos padrões."
+      },
+      {
+        "information": "Classificação produtiva / ciclo completo",
+        "availability": "Tipo de produção Corte/Leite/Mista e sistema de manejo; nenhum campo específico de ciclo completo na tela observada. Modo Completo da aplicação é outra dimensão.",
+        "problem": "Expressar fazenda que executa cria, recria e engorda sem inferência errada a partir de Corte.",
+        "source": "Dados cadastrais atuais não determinam composição das etapas; J02 já registrou ausência.",
+        "persistence": "Somente se a composição for necessária a uma operação concreta; modelo depende de decisão de domínio.",
+        "scope": "fazenda, opcional",
+        "derivation": "Não derivar ciclo completo de Corte, Mista ou modo de uso Completo.",
+        "benefit": "Potencial orientação de conteúdo e rotinas após validação.",
+        "complexityRisk": "Nova taxonomia pode duplicar categorias, obrigar dados sem uso e misturar perfil produtivo com modo da aplicação.",
+        "userValidation": "Necessária validação com responsáveis de cria/recria/engorda e definição de uso concreto.",
+        "recommendation": "Manter como hipótese opcional; não criar campo obrigatório nem equivalência automática."
+      }
+    ],
+    "critical_assessment": {
+      "main_obstacles": [
+        "Perfil pode informar sucesso sem persistir, bloqueando manutenção de nome/telefone e avatar.",
+        "Autoridade somente owner das flags de segurança não está protegida no contrato de UPDATE instalado.",
+        "Formulários longos e modos/alertas com efeitos pouco explicados, além de perda de rascunhos."
+      ],
+      "three_best_ux_improvements": [
+        {
+          "proposal": "Explicitar escopo pessoal ou Fazenda X e papel atual junto ao salvamento.",
+          "benefit_effort": "alto benefício / baixo esforço; nenhuma nova persistência"
+        },
+        {
+          "proposal": "Explicar efeitos/canal dos alertas, opções indisponíveis e referência do horário de silêncio.",
+          "benefit_effort": "alto benefício / baixo esforço de conteúdo e validação"
+        },
+        {
+          "proposal": "Organizar regras de estágio e segurança em básico/avançado, com resumo de mudanças e ajuda contextual.",
+          "benefit_effort": "alto benefício / esforço médio; preservar contratos existentes"
+        }
+      ],
+      "correction_priorities": [
+        {
+          "priority": "P0",
+          "finding": "J05-06",
+          "recommendation": "Exigir owner no servidor ao modificar flags; manter edições legítimas de manager. Planejar teste em fixture isolada numa correção autorizada."
+        },
+        {
+          "priority": "P1",
+          "finding": "J05-01",
+          "recommendation": "Garantir persistência de perfil complementar ausente e feedback conforme resultado real."
+        },
+        {
+          "priority": "P1",
+          "finding": "J05-03",
+          "recommendation": "Validar horário de silêncio antes de persistir."
+        },
+        {
+          "priority": "P2",
+          "finding": "J05-02",
+          "recommendation": "Mensagens estruturadas e recuperação consistentes."
+        },
+        {
+          "priority": "P2",
+          "finding": "J05-05",
+          "recommendation": "Consolidar proteção de rascunhos com J02/J03, sem duplicar iniciativas."
+        },
+        {
+          "priority": "P3",
+          "finding": "J05-04",
+          "recommendation": "Acompanhar alteração do tema do sistema sem depender de recarga."
+        }
+      ],
+      "useful_additional_information": [
+        "Papel atual e alcance do salvamento derivados das fontes existentes.",
+        "Fuso local/condições de avisos como ajuda contextual.",
+        "Origem e consequência dos parâmetros já disponíveis."
+      ],
+      "optional_or_advanced": [
+        "Foto e telefone complementar",
+        "Formatação regional, se necessidade real confirmada",
+        "Limiares de classificação e modos de transição avançados",
+        "Flags de segurança, com autoridade de owner imposta no servidor",
+        "Perfil produtivo/ciclo completo como hipótese opcional validada"
+      ],
+      "not_recommended": [
+        "Novos campos obrigatórios de município, etapa produtiva ou área pecuária sem uso operacional comprovado.",
+        "Unidade pessoal concorrendo com unidade da fazenda.",
+        "Derivar ciclo completo de Corte, Mista ou modo Completo da interface.",
+        "Knobs técnicos de fila/lote/background expostos por rotina.",
+        "Novos canais de notificação ou fonte paralela de identidade/classificação apenas para preencher lacunas de UX."
+      ],
+      "notifications": "Persistência demonstrada; fluxo sanitário inspecionado gera aviso in-app por plano derivado de Agenda e dedup local. Nenhum aviso foi efetivamente disparado nesta jornada sem Agenda populada. Push/e-mail/agendamento não demonstrados.",
+      "zootecnical_defaults": "Valores observados, não certificados como padrões tecnicamente adequados para toda raça, produção ou sistema; não foram substituídos por novos valores recomendados."
+    },
+    "known_issue_continuations": [
+      "J05-05"
+    ],
+    "critical_contract_gaps_by_inspection": [
+      "J05-06"
+    ],
+    "limitations": [
+      "Lacuna das flags confirmada por inspeção dos objetos ativos, sem exploração de alteração pelo gerente por proibição expressa; fluxo sensível encerrado.",
+      "Perfil não persiste: avatar e restauração de nome previamente salvo não puderam ser demonstrados.",
+      "Notificações efetivamente entregues, conversões em dados animais/eventos e aparelho físico/teclado virtual não certificados; não foram criados dados para forçar esses testes."
+    ]
+  }
+}

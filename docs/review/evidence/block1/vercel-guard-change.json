@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-21",
+  "authorization": "User request PR306 protected integration, only Ignored Build Step",
+  "projectId": "prj_zK4H56qvCjyxWk03p5GH0kmW8EGv",
+  "project": "rebanho-sync",
+  "teamId": "team_oTfqEJrR8Y8CHPF7usbe14Pg",
+  "domain": "rebanho-sync.vercel.app",
+  "field": "commandForIgnoringBuildStep",
+  "before": "if [ \"$VERCEL_ENV\" == \"production\" ]; then exit 1; else exit 0; fi",
+  "after": "exit 0",
+  "beforeReadAt": "2026-11-21T17:18:28.2765435Z",
+  "afterReadAt": "2026-11-21T17:20:11.1925712Z",
+  "activeBuildCountBefore": 0,
+  "productionBefore": {
+    "sha": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+    "id": "dpl_EPrxswLkPWi6tcuVvryuLahnv1He",
+    "aliases": [
+      "rebanho-sync.vercel.app",
+      "rebanho-sync-joao-paulo-mares-projects.vercel.app",
+      "rebanho-sync-git-main-joao-paulo-mares-projects.vercel.app"
+    ]
+  },
+  "productionAfter": {
+    "id": "dpl_EPrxswLkPWi6tcuVvryuLahnv1He",
+    "aliases": [
+      "rebanho-sync.vercel.app",
+      "rebanho-sync-joao-paulo-mares-projects.vercel.app",
+      "rebanho-sync-git-main-joao-paulo-mares-projects.vercel.app"
+    ],
+    "sha": "157376d90b3f3ac6ccfe806d98f1de37b2007644"
+  },
+  "otherSettingsChanged": false,
+  "restoreAutomatically": false,
+  "productionDeployExecuted": false,
+  "remoteMigrationsExecuted": false
+}

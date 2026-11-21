@@ -1,9 +1,10 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-11-20
+Atualizado em: 2026-11-21
+
 Status: **Fase 24 ativa; F24.5 e F24.6A1 CLOSED / INTEGRATED no escopo certificado; F24.6 ACTIVE**
 Próxima fase: **Fase 24 — mantida; nenhuma próxima frente definida nesta consolidação documental.** Implementação, curadoria e publicação produto–classe encerradas; sem nova fase ou certificação automática.
-Baseline integrada consultada: `main@ce304edbc37863ac1bdee61104bb05dce7541b36` ([#304](https://github.com/maresdeandrade/RebanhoSync/pull/304)); #303 integrada em `b6b2296a`. Contrato produto–classe publicado e gate da entrega READY.
+Baseline integrada consultada: `main@157376d90b3f3ac6ccfe806d98f1de37b2007644` (#305). #303/#304 integradas; contrato produto–classe com publicação própria. J04/Bloco 1 são posteriores e permanecem locais.
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29.
 Baseline de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`.
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27.
@@ -26,11 +27,19 @@ stale foi fechado em 05/10/2026 conforme a [evidência canônica](../context/PRO
 
 ## Continuidade reconciliada — 20/11/2026
 
+Recorte Bloco 1 J01–J05: correções locais e consolidação concluídas, com
+[evidência e limites](../context/PROJECT_STATUS.md#estado-atual). Integração e publicação
+das migrations J04/`20261121023104` e do frontend permanecem pendentes de autorização.
+Melhorias de UX foram somente priorizadas; este recorte não inicia J06 nem nova fase.
+Em 21/11, main remota e baseline do pacote coincidem, sem conflito de código. A base do
+[Guia do Usuário](../manuals/USER_MANUAL_INDEX.md) e as fontes ativas afetadas estão
+reconciliadas; [inventário e limites](./evidence/BLOCK1_INTEGRATION_20261121.json).
+
 #303 integrada; [#304](https://github.com/maresdeandrade/RebanhoSync/pull/304) integrada e publicada. A implementação e a curadoria da correspondência produto–classe estão encerradas: 33 produtos classificados, 37 vínculos ativos, oito classes aprovadas e disponibilidade nos 13/13 itens e 4/4 grupos, preservando os 39 cadastros comerciais ativos e os seis produtos fora da taxonomia. [Resultado e evidência canônica](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-304--20112026).
 
-A publicação técnica abrange as três migrations da entrega, catálogo, `sync-batch` v31, frontend e pull dos vínculos; cinco migrations não relacionadas permanecem pendentes, sem bloquear esse recorte. Não há pendência vigente de implementação, curadoria ou publicação produto–classe. Nenhuma próxima frente foi definida por esta consolidação.
+A publicação técnica anterior foi seguida pela reconciliação autorizada do backend: as cinco migrations sanitárias pendentes foram aplicadas pelo fluxo normal após dry-run, comparação de caminhos e validações focais; o inventário pós-push não apresentava pendência entre Local e Remote naquele recorte, anterior à J04/Bloco 1. `sync-batch` v31 permaneceu ativa, sem redeploy. Não há pendência vigente de implementação, curadoria ou publicação produto–classe; a reconciliação não ampliou o escopo funcional.
 
-O produto permanece em desenvolvimento. F24.6A2 não iniciada; não se encerra homologação ampla F24.7/F24.8 ou GATE-03 por associação, não se repetem certificações anteriores e não se abre nova fase. Exceções clínicas específicas continuam independentes da classificação cadastral.
+O produto permanece em desenvolvimento. J01 foi executada localmente via Chromium contra `127.0.0.1:54321`, sem criação de fazenda; cadastro, login, logout, bloqueio de rota protegida e viewports desktop/mobile passaram. Recuperação de senha não está exposta na UI e o logout registrou `400/ERR_ABORTED` no descarte global, embora a rota protegida tenha sido bloqueada. F24.6A2 não iniciada; não se encerra homologação ampla F24.7/F24.8 ou GATE-03 por associação, não se repetem certificações anteriores e não se abre nova fase. Exceções clínicas específicas continuam independentes da classificação cadastral.
 
 ## F24.6A — Performance / Scale Baseline
 

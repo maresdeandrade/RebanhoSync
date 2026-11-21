@@ -33,6 +33,8 @@ import { resolveNotificationPreferences } from "@/lib/notifications/sanitaryRemi
 import { applyTheme } from "@/lib/theme";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { authOperationError } from "@/lib/auth/errorMessage";
+import { validateQuietHours } from "@/lib/notifications/sanitaryReminders";
 
 const REMINDER_DAY_OPTIONS = [7, 3, 1] as const;
 
@@ -59,6 +61,10 @@ export const Perfil = () => {
   const [sanitaryFollowupAlerts, setSanitaryFollowupAlerts] = useState(true);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [quietHoursError, setQuietHoursError] = useState<string | null>(null);
+  const profileUserId = useRef<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -75,18 +81,24 @@ export const Perfil = () => {
   const loadProfile = async () => {
     try {
       setIsLoading(true);
+      setProfileLoadFailed(false);
       const {
         data: { user },
+        error: authError,
       } = await supabase.auth.getUser();
+      if (authError) throw authError;
       if (!user) throw new Error("Not authenticated");
 
       setEmail(user.email || "");
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from("user_profiles")
         .select("display_name, phone, avatar_url")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
+
+      if (error) throw error;
+      profileUserId.current = user.id;
 
       if (profile) {
         setDisplayName(profile.display_name || "");
@@ -94,10 +106,10 @@ export const Perfil = () => {
         setAvatarUrl(profile.avatar_url || "");
       }
     } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
+      setProfileLoadFailed(true);
       toast({
         title: "Erro ao carregar perfil",
-        description: err.message,
+        description: authOperationError(error, "Não foi possível carregar o perfil. Tente novamente."),
         variant: "destructive",
       });
     } finally {
@@ -112,11 +124,12 @@ export const Perfil = () => {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: settings } = await supabase
+      const { data: settings, error } = await supabase
         .from("user_settings")
         .select("theme, notifications, sync_prefs")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
+      if (error) throw error;
 
       if (settings) {
         setTheme(settings.theme || "system");
@@ -135,40 +148,45 @@ export const Perfil = () => {
         setSanitaryUpcomingAlerts(notifications.sanitaryUpcoming);
         setSanitaryFollowupAlerts(notifications.sanitaryFollowups);
       }
+      setSettingsLoaded(true);
     } catch (error: unknown) {
-      console.error("Error loading settings:", error);
+      toast({ title: "Erro ao carregar preferências", description: authOperationError(error, "Não foi possível carregar as preferências."), variant: "destructive" });
     }
   };
 
   const handleSaveProfile = async () => {
+    if (profileLoadFailed || !profileUserId.current) return;
     setIsSaving(true);
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+      if (user.id !== profileUserId.current) throw new Error("A sessão mudou. Recarregue o perfil antes de salvar.");
 
-      const { error } = await supabase
+      const { data: saved, error } = await supabase
         .from("user_profiles")
-        .update({
+        .upsert({
+          user_id: user.id,
           display_name: displayName,
           phone: phone || null,
           avatar_url: avatarUrl || null,
           updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
+        }, { onConflict: "user_id" })
+        .select("user_id, display_name, phone, avatar_url")
+        .single();
 
       if (error) throw error;
+      if (!saved || saved.user_id !== user.id) throw new Error("Não foi possível confirmar a gravação do perfil. Tente novamente.");
 
       toast({
         title: "Sucesso",
         description: "Perfil atualizado com sucesso",
       });
     } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
       toast({
         title: "Erro",
-        description: err.message,
+        description: authOperationError(error, "Não foi possível salvar o perfil. Tente novamente."),
         variant: "destructive",
       });
     } finally {
@@ -177,6 +195,10 @@ export const Perfil = () => {
   };
 
   const handleSaveSettings = async () => {
+    if (!settingsLoaded) return;
+    const validationError = quietHoursEnabled ? validateQuietHours(quietHoursStart, quietHoursEnd) : null;
+    setQuietHoursError(validationError);
+    if (validationError) return;
     setIsSaving(true);
     try {
       const {
@@ -197,16 +219,19 @@ export const Perfil = () => {
           : null,
       };
 
-      const { error } = await supabase
+      const { data: saved, error } = await supabase
         .from("user_settings")
         .update({
           theme,
           notifications,
           updated_at: new Date().toISOString(),
         })
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .select("user_id")
+        .single();
 
       if (error) throw error;
+      if (!saved || saved.user_id !== user.id) throw new Error("Não foi possível confirmar a gravação das preferências.");
 
       applyTheme(theme);
       await refreshSettings();
@@ -216,10 +241,9 @@ export const Perfil = () => {
         description: "Preferencias atualizadas com sucesso",
       });
     } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
       toast({
         title: "Erro",
-        description: err.message,
+        description: authOperationError(error, "Não foi possível salvar as preferências. Tente novamente."),
         variant: "destructive",
       });
     } finally {
@@ -380,6 +404,10 @@ export const Perfil = () => {
         </div>
 
         <TabsContent value="profile" className="space-y-5">
+          {profileLoadFailed && <div role="alert" className="space-y-2 text-destructive">
+            <p>Não foi possível carregar o perfil. Tente novamente antes de salvar.</p>
+            <Button variant="outline" onClick={() => void loadProfile()}>Tentar carregar perfil</Button>
+          </div>}
           <FormSection title="Identidade">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
               <div className="flex items-center gap-4 lg:min-w-[240px] lg:flex-col lg:items-start">
@@ -472,7 +500,7 @@ export const Perfil = () => {
             <div className="pt-2">
               <Button
                 onClick={handleSaveProfile}
-                disabled={isSaving}
+                disabled={isSaving || profileLoadFailed}
                 className="w-full sm:w-auto"
               >
                 {isSaving ? (
@@ -564,6 +592,8 @@ export const Perfil = () => {
                           id="quietHoursStart"
                           type="time"
                           value={quietHoursStart}
+                          aria-invalid={Boolean(quietHoursError)}
+                          aria-describedby={quietHoursError ? "quiet-hours-error" : undefined}
                           onChange={(event) =>
                             setQuietHoursStart(event.target.value)
                           }
@@ -576,6 +606,8 @@ export const Perfil = () => {
                           id="quietHoursEnd"
                           type="time"
                           value={quietHoursEnd}
+                          aria-invalid={Boolean(quietHoursError)}
+                          aria-describedby={quietHoursError ? "quiet-hours-error" : undefined}
                           onChange={(event) =>
                             setQuietHoursEnd(event.target.value)
                           }
@@ -583,6 +615,8 @@ export const Perfil = () => {
                         />
                       </div>
                     </div>
+
+                    {quietHoursError && <p id="quiet-hours-error" role="alert" className="text-sm text-destructive">{quietHoursError}</p>}
 
                     <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 px-4 py-4">
                       <div className="space-y-1">
@@ -673,7 +707,7 @@ export const Perfil = () => {
             <div className="pt-2">
               <Button
                 onClick={handleSaveSettings}
-                disabled={isSaving}
+                disabled={isSaving || !settingsLoaded}
                 className="w-full sm:w-auto"
               >
                 {isSaving ? (

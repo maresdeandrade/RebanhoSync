@@ -1,9 +1,10 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-11-20
+Atualizado em: 2026-11-21
+
 Status: **Fase 24 ativa; #303 integrada; #304 integrada e publicada; frente produto–classe encerrada; produto em desenvolvimento, sem homologação operacional ampla declarada**
 Próxima fase: **Fase 24 — mantida; nenhuma próxima frente definida nesta consolidação documental.** Implementação, curadoria e publicação produto–classe encerradas; sem nova fase ou certificação automática.
-Baseline integrada confirmada: `main@ce304edbc37863ac1bdee61104bb05dce7541b36` ([#304](https://github.com/maresdeandrade/RebanhoSync/pull/304)); #303 integrada em `b6b2296a`. Gate da entrega produto–classe: **READY**.
+Baseline integrada confirmada: `main@157376d90b3f3ac6ccfe806d98f1de37b2007644` (#305). #303/#304 integradas; gate da entrega produto–classe preservado. J04/Bloco 1 permanecem locais, ainda não publicados.
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -23,9 +24,27 @@ Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
+## Integração J04 e Bloco 1 — 21/11/2026
+
+Bloco 1 J01–J05 consolidado e corrigido localmente sobre a worktree J04 não integrada;
+escopo e evidência focal no [estado atual](../context/PROJECT_STATUS.md#estado-atual),
+contrato da guarda e perfil em [Supabase RLS](../technical/SUPABASE_RLS.md#regras-de-rls).
+A matriz integral e a priorização de UX ficam em `.work/block1/`, sem duplicação aqui.
+Migrations J04 e `20261121023104` somente locais; publicação remota não executada.
+J06 não iniciada. Alterações documentais preexistentes da worktree original foram preservadas.
+
+O [inventário documental e evidência de integração](./evidence/BLOCK1_INTEGRATION_20261121.json)
+registra documentos alterados/preservados, baseline e verificações. O [índice operacional](../manuals/USER_MANUAL_INDEX.md)
+reúne os cinco capítulos novos e os manuais anteriores, com disponibilidade local explícita.
+As 12 recomendações de UX continuam candidatas; recovery ausente, rascunhos e tema
+dinâmico não foram implementados por documentação. Não há impedimento demonstrado
+do Bloco 1 para planejar J06 no ambiente local validado; sua execução exige tarefa própria.
+O ambiente remoto ainda não contém as duas correções SQL, portanto o gate local não
+autoriza homologar J06 nele nem afirmar correções publicadas.
+
 ## Consolidação pós-304 — 20/11/2026
 
-Esta é a continuidade vigente. A [#304](https://github.com/maresdeandrade/RebanhoSync/pull/304) encerrou implementação, curadoria e publicação da correspondência produto–classe, após a integração da #303. A publicação técnica em produção não equivale à homologação operacional ampla do produto e não reabre ou amplia os recortes certificados da Fase 24.
+Snapshot da entrega produto–classe, anterior à consolidação J04/Bloco 1 acima. A [#304](https://github.com/maresdeandrade/RebanhoSync/pull/304) encerrou implementação, curadoria e publicação da correspondência produto–classe, após a integração da #303. A publicação técnica em produção não equivale à homologação operacional ampla do produto e não reabre ou amplia os recortes certificados da Fase 24.
 
 | Resultado confirmado na entrega | Estado |
 | --- | --- |
@@ -42,7 +61,25 @@ A relação N:N persistente `sanitario_produto_class_links_v2` é a fonte de ver
 
 Evidência detalhada: [artefato canônico de publicação](./evidence/SANITARIO_PRODUCT_CLASS_PUBLICATION_20261120.json) e [CI obrigatório da #304](https://github.com/maresdeandrade/RebanhoSync/actions/runs/44699301508). Contagens, RLS/ACL e hashes de produtos e regras clínicas foram conferidos na entrega; a validação remota foi não destrutiva, sem eventos fictícios em fazendas reais. Essas evidências são reaproveitadas, não reexecutadas nesta atualização documental.
 
-**Encerramento e limites:** gate da entrega **READY**; não resta implementação, curadoria ou publicação produto–classe pendente. Cinco migrations não relacionadas permanecem pendentes, sem bloquear esta entrega. F24.6 continua ativa; F24.6A2 não iniciada, F24.7/F24.8, GATE-03 e certificações anteriores mantêm seus limites. Não foi definida próxima frente de desenvolvimento.
+**Encerramento e limites:** gate da entrega **READY**; não resta implementação, curadoria ou publicação produto–classe pendente. A reconciliação backend abaixo é um recorte autorizado e separado, sem ampliar a homologação operacional. F24.6 continua ativa; F24.6A2 não iniciada, F24.7/F24.8, GATE-03 e certificações anteriores mantêm seus limites. Não foi definida próxima frente de desenvolvimento.
+
+## Reconciliação backend e J01 — 20/11/2026
+
+### Reconciliação remota
+
+Projeto confirmado: `zqloazqzhwauamcejmuz` (`RebanhoSync`), `ACTIVE_HEALTHY`, PostgreSQL 17.11. O inventário inicial e o dry-run listaram exatamente estas cinco migrations autorizadas: `20261115150000_sanitary_protocol_adoption_v1`, `20261116033209_sanitario_assessment_enum_v1`, `20261116033214_sanitario_assessment_core_v1`, `20261116170000_sanitary_strategic_calendar_v1` e `20261116211358_sanitary_agenda_open_identity_v1`.
+
+Antes da aplicação, a instalação completa de 83 migrations e o caminho incremental equivalente (todas exceto as cinco, seguido das cinco em ordem) convergiram em funções/ACLs, policies, triggers e constraints. As provas focais de avaliação factual, calendário estratégico e identidade aberta da Agenda passaram, assim como o validador funcional de baseline (RLS por papel, FKs cross-tenant, replay, inventário e sync-batch). A aplicação remota foi executada por `supabase db push --linked --include-all --skip-vault --yes`, sem repair, reset ou SQL manual; as cinco foram aplicadas sem erro.
+
+Pós-aplicação, `supabase migration list --linked` mostrou Local=Remote para o histórico, incluindo as cinco versões. Funções, grants, RLS, policies e constraint de avaliação foram encontrados no remoto. `sync-batch` permaneceu ativa na versão 31 com JWT; não houve redeploy. O catálogo produto–classe permaneceu com 37 vínculos. As 7 linhas de `sanitario_agenda_v2` (criadas em 20/10/2026) e 3 eventos sanitários (criados em 21/10/2026) eram anteriores à aplicação e foram preservados; as cinco migrations não contêm criação de agendas/eventos.
+
+Recuperação: migrations forward-only; não há rollback/reset remoto autorizado. Em erro, a estratégia é interromper, registrar migration/erro e não executar `migration repair` ou SQL improvisado.
+
+### J01 local
+
+O frontend foi executado contra `http://127.0.0.1:54321`, sem chave privilegiada, usando Chromium local e configuração temporária em `.work`. J01 passou em desktop 1440×900 e mobile 390×844: primeiro contato sem sessão, validação de login e cadastro, cadastro de conta sintética, erro de senha, login/continuidade de sessão, logout e bloqueio de rota protegida. Nenhuma fazenda foi criada; a conta sintética foi preservada para continuidade de J02, sem persistir senha ou token.
+
+Limitações observadas: não existe recuperação de senha exposta na UI de Login, portanto o cenário de recovery não foi aprovado; ocorreu `400`/`ERR_ABORTED` no request de logout global, embora a sessão tenha sido descartada o suficiente para bloquear a rota protegida. O preparo de homologação exclusiva não foi provisionado e a validação do empacotador falhou por `CANONICAL_HASH_MISMATCH`; nenhuma operação remota foi executada por esse script. Naquele snapshot de J01, J02–J30 ainda não haviam sido iniciadas; a continuidade J02–J05 está na consolidação do Bloco 1 acima.
 
 ## Consolidação pós-302 e validação da 303 — 19/11/2026
 

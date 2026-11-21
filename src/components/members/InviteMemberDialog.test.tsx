@@ -1,0 +1,17 @@
+/** @vitest-environment jsdom */
+import "@testing-library/jest-dom";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { InviteMemberDialog } from "./InviteMemberDialog";
+const { rpc, toast } = vi.hoisted(() => ({ rpc: vi.fn(), toast: vi.fn() }));
+vi.mock("@/lib/supabase", () => ({ supabase: { rpc } }));
+vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast }) }));
+beforeEach(() => { vi.clearAllMocks(); rpc.mockResolvedValue({ data: { token: "11111111-1111-4111-8111-111111111111" }, error: null }); });
+afterEach(cleanup);
+it("rejeita email invalido antes de gerar um convite utilizavel", async () => {
+  render(<InviteMemberDialog open onOpenChange={() => {}} fazendaId="farm-a" callerRole="owner" onSuccess={() => {}} />);
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: "nao-e-email" } });
+  fireEvent.click(screen.getByRole("button", { name: "Gerar convite" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(/email|e-mail/i);
+  expect(screen.queryByLabelText("Link do convite")).not.toBeInTheDocument();
+});

@@ -1,13 +1,22 @@
 # Known Gaps — RebanhoSync
 
-Atualizado em: 2026-11-18
+Atualizado em: 2026-11-21
 **Baseline documental original:** `93c3d1dd8401488139454c69c2a6595ae46abaa5`
 
 ## Reconciliação das lacunas — 18/11/2026
 
 #302 está integrada: avaliação factual sem aplicação, monitoramento e controle estratégico não são funcionalidades ausentes. Junho permanece contextual por decisão de produto. #301 está validada e aberta: vínculo técnico V2, previsão e indicadores de consumo/perda, incluindo execução coletiva; resta integração, não correção funcional demonstrada no recorte validado.
 
-As lacunas técnicas/curatoriais por produto e finalidade permanecem individualizadas. Não inferir aptidão comercial, conformidade universal, lucro completo ou peso atual confiável. Ausência de certificação física/kill e de disponibilização remota não equivale a falta do código local nem a P0 ativo. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+As lacunas técnicas/curatoriais por produto e finalidade permanecem individualizadas. Não inferir aptidão comercial, conformidade universal, lucro completo ou peso atual confiável. Ausência de certificação física/kill e de disponibilização remota não equivale a falta do código local nem a P0 ativo. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
+
+## Bloco 1 — situação reconciliada em 21/11/2026
+
+- **Implementado e validado localmente:** correções J04 de membros/convites/ownership; flags protegidas e gravação condicional de metadata; perfil ausente; erros estruturados; silêncio inválido; área/onboarding; apresentação financeira por papel. Integração/publicação ainda pendentes, sem reabrir correções locais concluídas.
+- **Implementado com limitação:** avisos sanitários in-app derivados da Agenda, sem garantia de entrega com app fechado; responsividade em Chromium, sem aparelho físico; avatar não certificado neste recorte.
+- **Pendente demonstrado:** Login sem recuperação de senha exposta; tema Sistema não acompanha mudança do SO sem reaplicar; descarte de rascunhos ao navegar/recarregar/trocar fazenda permanece observado. Proteção geral de rascunhos foi somente recomendada, não implementada.
+- **Evolução candidata:** 12 recomendações consolidadas de contexto, ajuda, formulários, estados vazios e informação operacional. Etapas produtivas, área pecuária e preferências de indicadores dependem de validação; não são novos obrigatórios.
+
+Os 26 grupos e suas origens permanecem em `.work/block1/consolidated-matrix.*`, sem duplicação aqui. [Inventário/evidência de integração](../review/evidence/BLOCK1_INTEGRATION_20261121.json); [guia operacional](../manuals/USER_MANUAL_INDEX.md). As jornadas futuras e seus gates anteriores não são certificados por este recorte.
 
 ## Objetivo
 

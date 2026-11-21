@@ -57,11 +57,12 @@ beforeEach(() => {
   mocks.role = "owner";
   mocks.metadata = {};
   mocks.single.mockImplementation(async () => ({
-    data: { nome: "Fazenda teste", metadata: mocks.metadata },
+    data: { nome: "Fazenda teste", metadata: mocks.metadata, updated_at: "2026-11-20T00:00:00Z" },
     error: null,
   }));
-  mocks.save.mockResolvedValue({ error: null });
-  mocks.update.mockReturnValue({ eq: mocks.save });
+  mocks.save.mockResolvedValue({ data: {metadata:{},updated_at:"2026-11-20T00:00:01Z"}, error: null });
+  const writeQuery = {eq: () => writeQuery, select: () => writeQuery, single: mocks.save};
+  mocks.update.mockReturnValue(writeQuery);
   mocks.from.mockReturnValue({
     select: () => ({ eq: () => ({ single: mocks.single }) }),
     update: mocks.update,
@@ -199,7 +200,7 @@ describe("EditarFazenda — acessibilidade dos switches (UX09B)", () => {
       expect(control).toBeChecked();
     }
     expect(mocks.update).toHaveBeenCalledTimes(1);
-    await act(async () => completeSave({ error: null }));
+    await act(async () => completeSave({ data: {metadata:{},updated_at:"2026-11-20T00:00:01Z"}, error: null } as never));
     expect(mocks.refreshSettings).toHaveBeenCalledTimes(1);
     for (const name of names) {
       expect(screen.getByRole("switch", { name })).toBeEnabled();

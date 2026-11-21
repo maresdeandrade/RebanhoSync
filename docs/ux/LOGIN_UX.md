@@ -1,7 +1,15 @@
 # Login UX — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
+
+## Implementação J01–J05 e limites atuais
+
+Cadastro, login, seleção/criação de fazenda e continuidade de convite foram observados nas jornadas locais. O cadastro exige Nome, E-mail, Telefone, Senha e Confirmar Senha; telefone de cadastro é contato editável, sem comprovação de número confirmado. Confirmação de email depende do ambiente; criar conta não cria fazenda nem aceita convite.
+
+J04 interpreta a prévia tabular do convite, distingue estados inválidos/expirados/utilizados, oferece retry e mantém ação explícita de aceitar após login/cadastro. O servidor exige destinatário confirmado; Perfil não altera identidade. Na tela atual **não existe ação de recuperação de senha**. O fluxo de recovery descrito abaixo é referência de UX candidata, não funcionalidade entregue.
+
+A fazenda ativa aparece no cabeçalho e pode ser trocada; a confirmação geral de descarte de rascunho ainda não está implementada. As diretrizes normativas abaixo não provam disponibilidade universal. [Manual atual](../manuals/screens/PRIMEIRO_ACESSO.md), [equipe](../manuals/screens/EQUIPE_CONVITES.md) e [estado local/remoto](../context/PROJECT_STATUS.md#estado-atual).
 
 ## Objetivo
 
@@ -49,7 +57,7 @@ Campos mínimos:
 Ações:
 
 - Entrar;
-- Esqueci minha senha;
+- recuperação de senha como evolução candidata; a tela atual não oferece essa ação;
 - Criar conta, se habilitado;
 - Ver estado de conexão, se relevante.
 
@@ -228,7 +236,7 @@ Não prometer login offline se não houver sessão local válida.
 
 ## Recuperação de senha
 
-Fluxo:
+Referência candidata, não implementada na tela atual. Fluxo a considerar somente em tarefa própria:
 
 ```txt
 Informar e-mail

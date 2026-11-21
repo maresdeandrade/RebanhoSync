@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const TEST_FILE_PATTERN = /(?:^|\/)(?:[^/]+\.)?(?:test|spec)\.[cm]?[jt]sx?$/;
+const LOCAL_NODE_CONTRACT_PATTERN = /^tests\/codex\/(?:member-invites(?:-concurrency)?|block1-(?:security|concurrency|browser))\.local\.test\.mjs$/;
 
 function normalizeFiles(files) {
   return [...new Set(files.map((file) => file.trim().replaceAll("\\", "/")).filter(Boolean))];
@@ -19,7 +20,7 @@ function isDocsFile(file) {
  * automaticamente na seleção incremental do Vitest.
  */
 function isTestFile(file) {
-  if (file.startsWith("e2e/")) return false;
+  if (file.startsWith("e2e/") || LOCAL_NODE_CONTRACT_PATTERN.test(file)) return false;
 
   return (
     file.startsWith("tests/") ||
@@ -30,6 +31,7 @@ function isTestFile(file) {
 
 function isFullFile(file) {
   return (
+    LOCAL_NODE_CONTRACT_PATTERN.test(file) ||
     file.startsWith("supabase/") ||
     file.startsWith("src/lib/offline/") ||
     file.startsWith("src/lib/auth/") ||

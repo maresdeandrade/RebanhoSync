@@ -1,7 +1,17 @@
 # Form Patterns — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
+
+## Aplicação verificada em J04/Bloco 1 local
+
+- Criar Fazenda exige nome; área opcional, quando informada, deve ser positiva. Onboarding usa nome e produção como critério de sua etapa, com município/estado opcionais, sem afirmar revisão factual inexistente.
+- Perfil distingue linha complementar ausente de erro de carga; cria/atualiza somente a própria linha e exige retorno confirmado. Erro de gravação mantém o rascunho na tela; não promete recuperação após desmontagem.
+- Horário de silêncio habilitado exige dois HH:mm válidos e diferentes; intervalo pela meia-noite é válido. Erro aparece junto aos campos e impede sucesso.
+- Editar Fazenda/Configurações condicionam a gravação à fazenda e versão carregadas. Conflito orienta recarga e preserva o estado remoto; nenhum falso sucesso para zero linhas.
+- Convite valida contato nas fronteiras pertinentes; gerar link não equivale a enviar mensagem. Guardas visuais não substituem autorização no serviço.
+
+Confirmação geral de descarte, recuperação de rascunho e reorganização mobile continuam candidatas/limitações observadas. As regras abaixo são padrões normativos; não presumir implantação em todo formulário. [Guia](../manuals/USER_MANUAL_INDEX.md), [contratos](../technical/SUPABASE_RLS.md#regras-de-rls), [disponibilidade](../context/PROJECT_STATUS.md#estado-atual).
 
 ## Objetivo
 

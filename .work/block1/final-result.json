@@ -1,0 +1,376 @@
+{
+  "classification": "READY",
+  "scope": "Somente correções locais prioritárias e consolidação Bloco 1 J01–J05; não é certificação global, integração ou publicação.",
+  "head": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+  "branch": "codex/j04-invites-members-auth",
+  "worktree": "C:\\Users\\mares\\.codex\\worktrees\\j04-invites-members-auth\\GestaoAgro",
+  "staged": false,
+  "committed": false,
+  "files": [
+    {
+      "path": "docs/context/PROJECT_STATUS.md",
+      "preexisting": false,
+      "sha256": "a66af95359b44ac0064bb5f8bfc2c3af699ab1dfbb09bf668c98f6c420f540f6"
+    },
+    {
+      "path": "docs/review/ACTIVE_PHASE_PLAN.md",
+      "preexisting": false,
+      "sha256": "b746fea95f6cbcd9ae16f54fcc6236729f49ef700bf03d125ee42622d88c362e"
+    },
+    {
+      "path": "docs/review/CURRENT_PHASE_HANDOFF.md",
+      "preexisting": false,
+      "sha256": "299f2b88d87abd576d1b1014ca7f36b9f8490b4db2b192345ad4705b2946dee1"
+    },
+    {
+      "path": "docs/technical/SUPABASE_RLS.md",
+      "preexisting": true,
+      "sha256": "aaf7dbe48ff710a0341d571100d42fafff2810fc9cafe6307ba1695d33d4be61"
+    },
+    {
+      "path": "src/components/members/InviteMemberDialog.tsx",
+      "preexisting": true,
+      "sha256": "74e54fe489c0019b31e508519a58c8d734f473eb7f1691216e830747a4f4560c"
+    },
+    {
+      "path": "src/components/members/MemberRoleDialog.tsx",
+      "preexisting": true,
+      "sha256": "c457930c85075b7a9872f6c07cd0a3aecffea6000f952cc1d54e570d1987f7c2"
+    },
+    {
+      "path": "src/components/members/PendingInvites.tsx",
+      "preexisting": true,
+      "sha256": "038a3b52042cf37a763f5062d9ae40d7c6ee23db41eec5f4173b33d109ef9345"
+    },
+    {
+      "path": "src/components/members/RemoveMemberDialog.tsx",
+      "preexisting": true,
+      "sha256": "324a8205f9790e5e60852e145926cdd62586decbd73f8cb146150953c551461a"
+    },
+    {
+      "path": "src/lib/notifications/__tests__/sanitaryReminders.test.ts",
+      "preexisting": false,
+      "sha256": "48b28ffef6ea770ad0fd53798b88e806ae3ce12883018d6f6bd8884dd7fec1e0"
+    },
+    {
+      "path": "src/lib/notifications/sanitaryReminders.ts",
+      "preexisting": false,
+      "sha256": "a0dcf67e47eb1eb5b6f4276b952872913e05fdff57d76c7b33b9b1ee01ea17ef"
+    },
+    {
+      "path": "src/pages/AcceptInvite.tsx",
+      "preexisting": true,
+      "sha256": "5a944ee18c5f53d0686745bb170532ff77dece9f982824f2182c381f8985e432"
+    },
+    {
+      "path": "src/pages/Configuracoes.tsx",
+      "preexisting": false,
+      "sha256": "14a566f37b2f656728b61ecd5edd3255b656fa7e8277f371e88e30ffa6606a64"
+    },
+    {
+      "path": "src/pages/CriarFazenda.tsx",
+      "preexisting": false,
+      "sha256": "2cae849284befb299c87cc728d55ec69cd6c5e2c66b71e28b54b331a0e4e81d5"
+    },
+    {
+      "path": "src/pages/EditarFazenda.tsx",
+      "preexisting": false,
+      "sha256": "dd98f4cf363edd8b1d4c0de7a5b65656e1e126f1f2137c901d75103fff295c8e"
+    },
+    {
+      "path": "src/pages/Financeiro.tsx",
+      "preexisting": false,
+      "sha256": "ec59ef010124b39bae19495c37fa70f103979b7451d1ffcc61f9bd325254ba49"
+    },
+    {
+      "path": "src/pages/Membros.tsx",
+      "preexisting": true,
+      "sha256": "7e177adad964777069920d87e7bfcee930cc0be9c3054e0a7c3387c826a9dd58"
+    },
+    {
+      "path": "src/pages/OnboardingInicial.tsx",
+      "preexisting": false,
+      "sha256": "a241a9901ffff5103e15f12996074dd5265581f648f5b2ff070f3c9e0a71aeea"
+    },
+    {
+      "path": "src/pages/Perfil.tsx",
+      "preexisting": false,
+      "sha256": "002a62e870684daf0e219985b40a7056130ff34a7fc99da862f352f801a41afa"
+    },
+    {
+      "path": "src/pages/__tests__/AcceptInvite.test.tsx",
+      "preexisting": true,
+      "sha256": "8703cc9d87ce7b6ec78fb10bc3afd961e55d89301ca50d2be3f548ad97bf3e1c"
+    },
+    {
+      "path": "src/pages/__tests__/EditarFazenda.test.tsx",
+      "preexisting": false,
+      "sha256": "824b7c0d519806983ba77333c6a436248519c36611668d401a02864e12508aff"
+    },
+    {
+      "path": "src/pages/__tests__/FinanceiroSubmit.test.tsx",
+      "preexisting": false,
+      "sha256": "241103414bd9e6e44c35b6b9daec680c3bfc46eed2217921b39ef56bf05d6603"
+    },
+    {
+      "path": "src/pages/__tests__/InviteAuthContinuity.test.tsx",
+      "preexisting": true,
+      "sha256": "afc5573731a4e09f0e0340d83328a6c12a14f05ce39aa05587b4194dee7478c9"
+    },
+    {
+      "path": "src/pages/__tests__/OnboardingInicial.e2e.test.tsx",
+      "preexisting": false,
+      "sha256": "15e6956d9a25e93e5a949dff8b2e2f26d860d53e60e8827cf6995d6d8570b2a0"
+    },
+    {
+      "path": "src/pages/__tests__/PerfilAdminNavigation.test.tsx",
+      "preexisting": false,
+      "sha256": "9c63ba9c3f5cef950b136c4206994737098e9d0cef0cc2fa97952aa54e604903"
+    },
+    {
+      "path": "src/components/members/InviteMemberDialog.test.tsx",
+      "preexisting": true,
+      "sha256": "5e5cb55ec6135a9787e5184758fd96d5b6c95ef4cdce957fe2b0b4f0830b125e"
+    },
+    {
+      "path": "src/lib/auth/errorMessage.ts",
+      "preexisting": true,
+      "sha256": "c681451111119f3e362de35262e75df476fa2dfccd7b8582fcf61985950963d0"
+    },
+    {
+      "path": "src/lib/farms/__tests__/updateFarm.test.ts",
+      "preexisting": false,
+      "sha256": "c2c04b5d0708de8b7bfbf29a6c275c77b1356d203cd5e0d0543453273ae7d22a"
+    },
+    {
+      "path": "src/lib/farms/updateFarm.ts",
+      "preexisting": false,
+      "sha256": "5cd82b16c2ba1d9ac1a8ce5ace328ac6f59e1e8f9fa80afbc409c97aa285f651"
+    },
+    {
+      "path": "src/pages/__tests__/CriarFazendaValidation.test.tsx",
+      "preexisting": false,
+      "sha256": "175e3e41aecb41f54d5320a147b79ae873ea78d8c2263c5bb18503fca9d2a3df"
+    },
+    {
+      "path": "src/pages/__tests__/Membros.test.tsx",
+      "preexisting": true,
+      "sha256": "0af040a79ddd5e2a2993134394bf4bf886a217cea8a99aab90bbe83065d27035"
+    },
+    {
+      "path": "src/pages/__tests__/PerfilPersistence.test.tsx",
+      "preexisting": false,
+      "sha256": "0d02f89743b33129a3fbe7eda7beb20f7a88336c9a21d3eca8eeedb20611ab16"
+    },
+    {
+      "path": "supabase/migrations/20261120231349_j04_members_invites_authorization.sql",
+      "preexisting": true,
+      "sha256": "49b4fe6b30b2de1f9d322cbc3c404b42d56ec99b166fbb3895b665ec7db990fa"
+    },
+    {
+      "path": "supabase/migrations/20261121023104_block1_farm_security_flags_guard.sql",
+      "preexisting": false,
+      "sha256": "e39da3d5cbebd8ab0ca9a0849d6627574c97073e7a4e85fdb348a55dc86db2e8"
+    },
+    {
+      "path": "tests/codex/block1-browser.local.test.mjs",
+      "preexisting": false,
+      "sha256": "1eaba63fc7c3e6a5d00f0cf8920b29f5a56a157cc3376bfb46a16d745a8146c3"
+    },
+    {
+      "path": "tests/codex/block1-concurrency.local.test.mjs",
+      "preexisting": false,
+      "sha256": "e91d2edc8ef75d055bec62928088763dc014515d6dab1f7b5ce82a23ae7136cf"
+    },
+    {
+      "path": "tests/codex/block1-security.local.test.mjs",
+      "preexisting": false,
+      "sha256": "eafa035759876d0b1ff8a669c85980b97944e5dd1b1383a4245e9a17225e6e8d"
+    },
+    {
+      "path": "tests/codex/member-invites-concurrency.local.test.mjs",
+      "preexisting": true,
+      "sha256": "26b7219c8a486d31d2f9f4de835e79eb896f3a07d68ed84172ea5e5aa3725458"
+    },
+    {
+      "path": "tests/codex/member-invites.local.test.mjs",
+      "preexisting": true,
+      "sha256": "6dd255b73c1b19eed95c1f3b5406ea269a4e4eec9d21ed519cc1398be1d56d17"
+    }
+  ],
+  "newOrChangedByThisTask": [
+    "docs/context/PROJECT_STATUS.md",
+    "docs/review/ACTIVE_PHASE_PLAN.md",
+    "docs/review/CURRENT_PHASE_HANDOFF.md",
+    "docs/technical/SUPABASE_RLS.md",
+    "src/lib/notifications/__tests__/sanitaryReminders.test.ts",
+    "src/lib/notifications/sanitaryReminders.ts",
+    "src/pages/Configuracoes.tsx",
+    "src/pages/CriarFazenda.tsx",
+    "src/pages/EditarFazenda.tsx",
+    "src/pages/Financeiro.tsx",
+    "src/pages/OnboardingInicial.tsx",
+    "src/pages/Perfil.tsx",
+    "src/pages/__tests__/EditarFazenda.test.tsx",
+    "src/pages/__tests__/FinanceiroSubmit.test.tsx",
+    "src/pages/__tests__/OnboardingInicial.e2e.test.tsx",
+    "src/pages/__tests__/PerfilAdminNavigation.test.tsx",
+    "src/lib/farms/__tests__/updateFarm.test.ts",
+    "src/lib/farms/updateFarm.ts",
+    "src/pages/__tests__/CriarFazendaValidation.test.tsx",
+    "src/pages/__tests__/PerfilPersistence.test.tsx",
+    "supabase/migrations/20261121023104_block1_farm_security_flags_guard.sql",
+    "tests/codex/block1-browser.local.test.mjs",
+    "tests/codex/block1-concurrency.local.test.mjs",
+    "tests/codex/block1-security.local.test.mjs"
+  ],
+  "inheritedCodeAndMigrationPreserved": true,
+  "review": {
+    "kind": "autorrevisão do diff tracked e untracked relevante; sem revisão independente",
+    "gate": "rebanhosync-verification-gate",
+    "missingCriticalChecks": [],
+    "scopeExpansion": "Escrita condicional nos três escritores de metadata motivada por reversão de flags de owner reproduzida em Chromium; sem alteração de schema adicional."
+  },
+  "checks": [
+    {
+      "command": "node node_modules/vitest/vitest.mjs run src/pages/__tests__/PerfilPersistence.test.tsx src/pages/__tests__/PerfilAdminNavigation.test.tsx src/lib/notifications/__tests__/sanitaryReminders.test.ts src/lib/farms/__tests__/updateFarm.test.ts src/pages/__tests__/FinanceiroSubmit.test.tsx src/pages/__tests__/OnboardingInicial.e2e.test.tsx src/pages/__tests__/CriarFazendaValidation.test.tsx src/pages/__tests__/EditarFazenda.test.tsx src/pages/__tests__/AcceptInvite.test.tsx src/pages/__tests__/InviteAuthContinuity.test.tsx src/pages/__tests__/Membros.test.tsx src/components/members/InviteMemberDialog.test.tsx",
+      "result": "95/95",
+      "evidence": "unit-final.txt"
+    },
+    {
+      "command": "node --test tests/codex/block1-security.local.test.mjs tests/codex/member-invites.local.test.mjs",
+      "result": "29/29",
+      "evidence": "security-j04-final.txt"
+    },
+    {
+      "command": "node --test tests/codex/block1-concurrency.local.test.mjs",
+      "result": "1/1; duas disputas reais em conexões separadas",
+      "evidence": "concurrency.txt"
+    },
+    {
+      "command": "node --test tests/codex/block1-browser.local.test.mjs",
+      "result": "1/1; fluxo Chromium com capturas desktop/mobile e sessões independentes",
+      "evidence": "browser-final.txt"
+    },
+    {
+      "command": "node scripts/codex/validate-supabase-baseline-functional.mjs",
+      "result": "exit 0; somente stack descartável 54421/54422 com env em memória",
+      "evidence": "baseline-functional.txt"
+    },
+    {
+      "command": "node node_modules/eslint/bin/eslint.js .",
+      "result": "exit 0; saída vazia",
+      "evidence": "lint.txt"
+    },
+    {
+      "command": "node scripts/antigravity/run_bash.mjs scripts/antigravity/docs_gates.sh",
+      "result": "exit 0; inclui auditoria de agentes",
+      "evidence": "docs-gates.txt"
+    },
+    {
+      "command": "node .work/block1/preserve.mjs",
+      "result": "sem diferenças nas jornadas, originais ou código J04",
+      "evidence": "preservation-final.json"
+    },
+    {
+      "command": "git diff --check; git diff --cached --stat",
+      "result": "exit 0; nenhum staged"
+    }
+  ],
+  "redGreen": {
+    "sql": "4 falhas antes da guarda; 10/10 após overlay, repetidos na versão aplicada",
+    "profile": "7 falhas após corrigir seletor do harness; green final",
+    "functional": "área/onboarding e financeiro reproduzidos; green final",
+    "staleOwner": "namespace de flags removido por gravação antiga; erro de leitura da propriedade no teste registra a manifestação anterior; guardado depois por versão/fazenda com green Chromium"
+  },
+  "environmentNotes": [
+    "pnpm test tentou reinstalar dependências e recusou junction fora da worktree; Vitest e ESLint instalados foram executados diretamente, sem reinstalação.",
+    "Primeiro gate documental interpretou número de migration nos primeiros 18 cabeçalhos como commit; conteúdo foi movido ao corpo, sem alterar gate.",
+    "Um teste de navegador procurou select onde havia botões; harness corrigido antes de usar a prova de owner desatualizado.",
+    "Warnings de React Router/Radix nas fixtures existentes; nenhum erro de lint ou teste final."
+  ],
+  "notExecuted": [
+    "Suíte global, build e E2E completo: escopo focal e critérios de aceite não exigiam.",
+    "Reexecução completa de J01–J05: evidências originais preservadas; somente regressões das superfícies alteradas.",
+    "Upload de avatar e storage: não alterados nem certificados; novo upsert preserva contrato da URL.",
+    "Aparelho físico e teclado virtual: Chromium desktop/mobile não os substitui.",
+    "Reconsulta do ambiente remoto: nenhuma publicação remota executada por esta sessão."
+  ],
+  "preservation": {
+    "originalResultFilesChecked": 6,
+    "originalMismatches": [],
+    "inheritedFilesChecked": 14,
+    "inheritedMismatches": [],
+    "allowedInheritedDocExtension": "docs/technical/SUPABASE_RLS.md",
+    "journeyDifferences": [],
+    "counts": {
+      "animais": 0,
+      "lotes": 0,
+      "pastos": 0,
+      "eventos": 0,
+      "finance_transactions": 0
+    },
+    "localMigrations": [
+      "20261120231349",
+      "20261121023104"
+    ],
+    "trigger": [
+      {
+        "definition": "CREATE TRIGGER trg_guard_fazenda_security_flags BEFORE UPDATE OF metadata ON public.fazendas FOR EACH ROW EXECUTE FUNCTION guard_fazenda_security_flags()"
+      }
+    ],
+    "originalWorkspaceStatus": " M docs/context/PROJECT_STATUS.md\n M docs/review/ACTIVE_PHASE_PLAN.md\n M docs/review/CURRENT_PHASE_HANDOFF.md\n?? .work/\n",
+    "head": "157376d90b3f3ac6ccfe806d98f1de37b2007644"
+  },
+  "browser": {
+    "status": "passed",
+    "backend": "http://127.0.0.1:54421",
+    "frontend": "http://127.0.0.1:4174",
+    "farm": "97090c94-66d5-461e-a07b-bfc4a5415844",
+    "user": "9eb4dd3a-79a4-43a0-8385-688a3cba4f72",
+    "other": "eba6f270-39dc-4f22-bfc1-6c1348a9a691",
+    "captures": [
+      "profile-new-session-mobile.png",
+      "profile-network-error.png",
+      "quiet-hours-invalid.png",
+      "create-desktop.png",
+      "create-mobile.png",
+      "onboarding-desktop.png",
+      "onboarding-mobile.png",
+      "edit-desktop.png",
+      "edit-mobile.png",
+      "finance-desktop.png",
+      "finance-mobile.png",
+      "stale-owner-settings.png",
+      "finance-cowboy.png"
+    ],
+    "checks": [
+      "profile first insert",
+      "profile update",
+      "reload",
+      "new authenticated Chromium session",
+      "structured network failure preserves draft/no false success",
+      "foreign identity rejected via real PostgREST",
+      "quiet hours incomplete rejection",
+      "overnight persistence and reload",
+      "negative farm area",
+      "onboarding criteria",
+      "owner/cowboy finance UI",
+      "desktop/mobile screenshots",
+      "stale owner settings rejected without flag reversal",
+      "reload and save preserve unrelated keys and flags",
+      "edit farm conditional save"
+    ],
+    "fixtures": "retained in isolated disposable backend; original sessions untouched"
+  },
+  "risksAndPending": [
+    "Integração/publicação remota pendentes: migrations J04/20261121023104 e frontend; estado remoto atual não recertificado nesta sessão.",
+    "J05-04 (tema dinâmico), descarte geral de rascunhos, recovery e demais UX/candidatas permanecem fora das correções prioritárias; detalhados na matriz.",
+    "Validação local com fixtures sintéticas; não certifica operação global, dispositivo físico, avatar ou entrega por novos canais."
+  ],
+  "remoteOperations": false,
+  "push": false,
+  "merge": false,
+  "deploy": false,
+  "j06": false
+}

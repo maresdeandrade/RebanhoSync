@@ -1,8 +1,7 @@
-```md
 # Product Docs — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
 
 ## Objetivo
 
@@ -13,6 +12,8 @@ Ela orienta priorização e evita expansão indevida do MVP.
 ---
 
 ## Arquivos
+
+Capacidades J01–J05 implementadas localmente, limitações e candidatas estão no [mapa](./CAPABILITY_MAP.md#j01j05--maturidade-observada-no-pacote-local) e na [rastreabilidade](./REQUIREMENTS_TRACEABILITY.md#bloco-1--rastreabilidade-do-pacote-local). O [Guia do Usuário](../manuals/USER_MANUAL_INDEX.md) é a entrada operacional; recomendações de UX não são decisões novas de produto.
 
 | Arquivo | Uso |
 |---|---|
@@ -154,7 +155,5 @@ Antes de aprovar uma nova funcionalidade, responder:
 * [ ] Pode ser explicada de forma simples?
 * [ ] Tem critério de aceite testável?
 * [ ] Deve atualizar `CAPABILITY_MAP.md`, `ROADMAP.md` ou `OUT_OF_SCOPE.md`?
-
-```
 
 ```

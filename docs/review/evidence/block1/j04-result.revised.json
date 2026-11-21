@@ -1,0 +1,886 @@
+{
+  "revision": "2026-11-21",
+  "purpose": "Versão revisada e sanitizada do relatório original; não é reexecução da jornada nem certificação da produção.",
+  "original": {
+    "localRoot": "workspace_original/.work",
+    "file": "j04-result.json",
+    "sha256": "e059d2021255902298d200799564a69fb33d044b0af10adb8b96e5765c600fb2",
+    "bytes": 54161,
+    "archivedInGit": false
+  },
+  "originalReportedStatus": "partial_blocked_membership_acceptance_and_critical_contract_gaps",
+  "currentAssessment": [
+    {
+      "group": "B1-06",
+      "origins": [
+        "J04-CUX01"
+      ],
+      "title": "Ações financeiras oferecidas ao cowboy",
+      "status": "corrigido localmente",
+      "acceptance": "FinanceiroSubmit (owner/cowboy); Chromium; policies ativas verificadas."
+    },
+    {
+      "group": "B1-07",
+      "origins": [
+        "J04-F06",
+        "J05-02"
+      ],
+      "title": "Tratamento de erros estruturados",
+      "status": "corrigido localmente",
+      "acceptance": "PerfilPersistence erro estruturado e rede; regressão J04 de mensagem/retry."
+    },
+    {
+      "group": "B1-08",
+      "origins": [
+        "J04-F01"
+      ],
+      "title": "Carregamento da equipe sem perfil",
+      "status": "corrigido localmente",
+      "acceptance": "Membros.test.tsx"
+    },
+    {
+      "group": "B1-09",
+      "origins": [
+        "J04-F02"
+      ],
+      "title": "Prévia e contexto de aceite",
+      "status": "corrigido localmente",
+      "acceptance": "AcceptInvite e InviteAuthContinuity"
+    },
+    {
+      "group": "B1-10",
+      "origins": [
+        "J04-F03"
+      ],
+      "title": "Contato inválido no convite",
+      "status": "corrigido localmente",
+      "acceptance": "InviteMemberDialog e member-invites SQL"
+    },
+    {
+      "group": "B1-11",
+      "origins": [
+        "J04-F04"
+      ],
+      "title": "Atualização da lista de convites",
+      "status": "corrigido localmente",
+      "acceptance": "Membros.test.tsx"
+    },
+    {
+      "group": "B1-12",
+      "origins": [
+        "J04-F05"
+      ],
+      "title": "Contador de convites",
+      "status": "corrigido localmente",
+      "acceptance": "Membros.test.tsx"
+    },
+    {
+      "group": "B1-13",
+      "origins": [
+        "J04-SC01"
+      ],
+      "title": "Destinatário, replay e reingresso",
+      "status": "corrigido localmente",
+      "acceptance": "member-invites.local.test.mjs + prova Auth/concorrência original J04 preservada"
+    },
+    {
+      "group": "B1-14",
+      "origins": [
+        "J04-SC02"
+      ],
+      "title": "Proteção de proprietário e último owner",
+      "status": "corrigido localmente",
+      "acceptance": "member-invites.local.test.mjs + concorrência real original J04; integração com trigger retestada"
+    },
+    {
+      "group": "B1-17",
+      "origins": [
+        "J03-U02",
+        "J03-U05",
+        "J04-U02"
+      ],
+      "title": "Fazenda ativa e alcance do salvamento",
+      "status": "candidato",
+      "acceptance": "Futuro: duas propriedades e papéis diferentes, duas abas e viewport mobile."
+    },
+    {
+      "group": "B1-18",
+      "origins": [
+        "J02-05",
+        "J03-U03",
+        "J04-U01"
+      ],
+      "title": "Terminologia, obrigatoriedade e básico/avançado",
+      "status": "candidato",
+      "acceptance": "Futuro: tarefa de primeiro acesso e entendimento de controles indisponíveis."
+    },
+    {
+      "group": "B1-21",
+      "origins": [
+        "J04-U03"
+      ],
+      "title": "Aviso de convite duplicado ou membro existente",
+      "status": "candidato",
+      "acceptance": "Futuro: dois convites, contato por email/telefone, expirado/cancelado e membro ativo."
+    },
+    {
+      "group": "B1-22",
+      "origins": [
+        "J04-U04"
+      ],
+      "title": "Continuidade na recuperação do convite",
+      "status": "corrigido localmente na continuidade implementada; ajuda adicional candidata",
+      "acceptance": "InviteAuthContinuity vigente."
+    },
+    {
+      "group": "B1-23",
+      "origins": [
+        "J04-U05"
+      ],
+      "title": "Entrega de convite e informação de equipe",
+      "status": "parcialmente corrigido na J04; evolução candidata",
+      "acceptance": "InviteMemberDialog; futuro: clareza de compartilhamento/data de ingresso."
+    }
+  ],
+  "assessmentNote": "Estado das correções locais conforme matriz consolidada do Bloco 1. O conteúdo abaixo preserva o relato original, com redação sanitizada, sem substituir falhas históricas por resultados novos. Integração e publicação devem ser verificadas separadamente no PR306.",
+  "selection": "Campos narrativos, cenários, achados, recomendações e limites selecionados; identidade, sessões, inputs, dados persistidos, payloads e logs completos excluídos.",
+  "content": {
+    "journey": "J04 — Gestão de Colaboradores, Convites e Permissões",
+    "date": "2026-11-20",
+    "timezone": "America/Sao_Paulo",
+    "created_at": "2026-11-20T22:56:11.249Z",
+    "baseline": {
+      "workspace": "[caminho local omitido]",
+      "branch": "codex/product-class-contract-v2",
+      "head": "6d63d8b597b18b353863f655662d82b557352061",
+      "frontend": "http://127.0.0.1:4173/",
+      "backend": "http://127.0.0.1:54321/",
+      "previousResultsAndEvidenceHashes": {
+        ".work/j01-result.json": "1f5efddac311ba1ed0b538a17a844971043a28b265f345c713df6d1bd8b03015",
+        ".work/j02-result.json": "afde54749a0a256415cebac7517676702f3a76445e8bfa1520ab3e9c6e07244b",
+        ".work/j03-result.json": "d65f1fcb417e28a37ab37f519f3ffdeacedfee4ad372870558498ba6e5fc9681",
+        "docs/context/PROJECT_STATUS.md": "7307b3824d6cd20d2507aa2a211e3d68963c3b149829abe8f1069bf4f685bfc6",
+        "docs/review/ACTIVE_PHASE_PLAN.md": "b721f22485016270c1fd11c56d6e4569c3e96f2a0ad464af9c861a583d12a174",
+        "docs/review/CURRENT_PHASE_HANDOFF.md": "cbc5754afb0cd056306d03a2344e5a8ad6062396cd221fa30d4b1e85ea8e18da",
+        ".work/evidence/j02/01-authentication-required.jpg": "41cc852e75e82d0719d8831dba922a05d06b59149452f7fe84a9e1dd68b6eff3",
+        ".work/evidence/j02/02-sem-fazenda-desktop.png": "1f33eeacb018635a4c25ce0d5b6c2abd035ae1617349e6de8c2011343a169bcb",
+        ".work/evidence/j02/03-formulario-desktop.png": "0bb14174d27e72a7b0ba9da3b55a08ca7a51938fd3a01ffbe589ccf13fb6fb2c",
+        ".work/evidence/j02/04-campos-obrigatorios.png": "f302443091cdf2e982a02c9d39bd4c21f1d7ef1d7d797688ffb28537b5bf834d",
+        ".work/evidence/j02/05-area-cep-invalidos.png": "48e50b22be5285c5940e408d1d2c9bca2c5d744d32b878449227d6ee9ec7af40",
+        ".work/evidence/j02/06-resultado-tentativa-invalida.png": "9bb3a593fafcc13964fa99d8c22f118164d789a8cc542b10617a83bd873d5f42",
+        ".work/evidence/j02/07-validacao-mobile.png": "dfb07f93b2af4e901fdaa542ed1f4154b8f56a4c38e95f0311eee7ba1f59d7cd",
+        ".work/evidence/j02/08-retorno-formulario-mobile.png": "bb5fff899f1cafb84a1fd92d82003d1f71386e4add8ead9753b2d9ade6226510",
+        ".work/evidence/j02/09-obrigatorio-mobile.png": "c22f42819ee3f7a10213576e6cc9ac71a245b574f9457fbe76c77c85a47d12d8",
+        ".work/evidence/j02/10-dados-validos-mobile.png": "c4d15de25f6dbb34f54901987d8ddb50073908879642efa7c63345cc6581f787",
+        ".work/evidence/j02/11-onboarding-criado-mobile.png": "245776c63f8d6760b63b44510bcca284f2b74e630aedc79144693b82c3f1540d",
+        ".work/evidence/j02/12-onboarding-desktop.png": "ff3136037472ba81a277b90b0474eed84ccd8a55aff234b09aaea08ddbd3f733",
+        ".work/evidence/j02/13-etapa-fazenda-desktop.png": "ed923f9cf3d76176e56edae427f2082a9c112f06a312a8508b2a5d997c6485a4",
+        ".work/evidence/j02/14-home-inicial-desktop.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j02/15-home-primeiros-passos.png": "97d5abcfade75c2c0214a40fc6dfafdf7009d5ab378b6f15821165a7106d92b9",
+        ".work/evidence/j02/16-configuracoes-perfil.png": "b5090d17d6c2ddef8158d1e992876ccceb5d6aafb554e9ddb203b0c0153324e6",
+        ".work/evidence/j02/17-cadastro-persistido-desktop.png": "de9ea27f67ca423aa86b0a43e595c8ddf10bcfbe90c62079c6f823baca99aa8f",
+        ".work/evidence/j02/18-animais-vazio-desktop.png": "9f621a7c8187b2873695698a162b2606359c9ef444c4e1e2129cc795784fda51",
+        ".work/evidence/j02/19-lotes-vazio-desktop.png": "50823c7a8c88f457efccda1dff336f45f179c903a99e9cdf06ba84eb3fdc1751",
+        ".work/evidence/j02/20-pastos-vazio-desktop.png": "4cc9ce610bfaad239d459de9dffd454fd06abc718f9c57ca2db82c8ddc0ceb54",
+        ".work/evidence/j02/21-registrar-sem-execucao-desktop.png": "e7cf75e294d7e74a6270989acf46972a7fe71a169f1bb72e559a6bbda1cfb7d6",
+        ".work/evidence/j02/22-home-antes-recarga.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j02/23-home-pos-recarga-desktop.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j02/24-home-mobile.png": "332af37158935b4de3820d758885d42ea9b751143b886a43bc93498b34223a5a",
+        ".work/evidence/j02/25-menu-mais-mobile.png": "d73289e5b7b727557a5205f7a89e9320a99d95ac492e3a063627f2649c63c5ad",
+        ".work/evidence/j02/26-lotes-vazio-mobile.png": "8e84414b7f02286a9e9cca652f614bcf2a1388e96ad9389c8142da91b51ec40e",
+        ".work/evidence/j02/27-pastos-vazio-mobile.png": "53fa7e3c1fdd8605355c1091714bda3b9bb727f3df4445f33be4e9e8dc168cda",
+        ".work/evidence/j02/28-animais-vazio-mobile.png": "a78c099e8ab01d28cbbb75b713113c8d3901a197ba2780ac8d1ce02a5f96d91d",
+        ".work/evidence/j02/29-registrar-mobile.png": "8b3b5e93d7b2d4a48edce730748299a7bfb6dd8e2bc1b3da96ae490b86a7bd09",
+        ".work/evidence/j02/30-home-mobile-viewport.png": "459a67a96ddaf8229fbc789eb0f0cd7c4983aa2d1e88280304db2193125f71f5",
+        ".work/evidence/j02/31-reabertura-desktop.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j02/32-home-final-desktop.png": "30c3354c1576b0965ed40c54e62e7dac409792f74ba84b786547710c210668d6",
+        ".work/evidence/j03/01-inicio-horizonte.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j03/02-menu-fazenda-desktop.png": "446b4bca62cbcd7025b67ec1e5b1cd7ea2d26d5a6b3315cb5e98e9153cc3ac01",
+        ".work/evidence/j03/03-seletor-uma-fazenda.png": "7ba2e0509ab967985ba5264f5dbfebc32571bebe6ace87bce72ca3f7d0e4b89e",
+        ".work/evidence/j03/04-controle-antes-criacao.png": "2358db963887fd188820cfaefc83f77d3b632a43cbba34236fb1d5cb3b4429c1",
+        ".work/evidence/j03/05-controle-criada.png": "49cdab001ac0d5e4d19cede9387717f61e2f94a17e61eee0dcdd368c52da0817",
+        ".work/evidence/j03/06-controle-horizonte-ativa.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j03/06-controle-horizonte-seletor.png": "fabce3cf2fb9fd6211851b89e7c49c9327ab4ee1cadb843655ffdcf6e0542763",
+        ".work/evidence/j03/07-horizonte-controle-ativa.png": "4a9c50e04fcbf3da815142f30a1cb4b1e64dc7c08bbab380687b8ceba18c0c02",
+        ".work/evidence/j03/07-horizonte-controle-seletor.png": "fabce3cf2fb9fd6211851b89e7c49c9327ab4ee1cadb843655ffdcf6e0542763",
+        ".work/evidence/j03/08-controle-horizonte-ativa.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j03/08-controle-horizonte-seletor.png": "add2513bb8e40ce4d597211695994918d4f907f765152e9d61a138f64bef6f2b",
+        ".work/evidence/j03/09-horizonte-animais.png": "d6a1c91fecb69264ff9e5e7948eba28af101bf7603719c2da13a576e9aa60c27",
+        ".work/evidence/j03/10-horizonte-lotes.png": "8535bed065e48b00a14c8c0b7d136c3a56c121451028f3a56ade1a1164a2161d",
+        ".work/evidence/j03/11-horizonte-pastos.png": "93fc0bd7e99d20851c6a151a398705fa2b57b863c78b31dd8d4bdd6660ee3e78",
+        ".work/evidence/j03/12-horizonte-agenda.png": "165d3b98c382d382d480bde10e4d1b[telefone omitido]d705096a6f7bb5359be469",
+        ".work/evidence/j03/13-horizonte-registrar.png": "e7cf75e294d7e74a6270989acf46972a7fe71a169f1bb72e559a6bbda1cfb7d6",
+        ".work/evidence/j03/14-horizonte-financeiro.png": "b82786fe3b824e1cc0275b0d065196a791cdbb4565e0708bda2e5ec2cacae289",
+        ".work/evidence/j03/15-horizonte-configuracoes.png": "3132e513778769c03a172d53245f5644cf71e05a570dac4221ced5c253f0f8ec",
+        ".work/evidence/j03/16-horizonte-controle-ativa.png": "4a9c50e04fcbf3da815142f30a1cb4b1e64dc7c08bbab380687b8ceba18c0c02",
+        ".work/evidence/j03/16-horizonte-controle-seletor.png": "fabce3cf2fb9fd6211851b89e7c49c9327ab4ee1cadb843655ffdcf6e0542763",
+        ".work/evidence/j03/17-controle-animais.png": "660b2681ecaf9093126c7a5ed3f0d6e7420d49b41216953c42a205386438b572",
+        ".work/evidence/j03/18-controle-lotes.png": "fb045b8bd8c210669960dc1c10b09d2630bddaaaa888bf4736bcf9bc61c50a1c",
+        ".work/evidence/j03/19-controle-pastos.png": "55902d83eba7687d4100115248ae2991d3a9237bde523852f94eca997bf9fbae",
+        ".work/evidence/j03/20-controle-agenda.png": "d5be7e5917275235fb3eba756be3fa0197346a07a0159ba4abf027345d9e4d3b",
+        ".work/evidence/j03/21-controle-registrar.png": "84777c545092b37a568aafe9e762ebbc1b723463e9c96cacfeadeff63a24d883",
+        ".work/evidence/j03/22-controle-financeiro.png": "9aeb3578599ee751973fc2fb627e8d727c625510ecef543d738c456578bcf414",
+        ".work/evidence/j03/23-controle-configuracoes.png": "6ac817e47beaea4120ec6dfba254c198aa3b6ae2c9efbdba7b4ba69918835f50",
+        ".work/evidence/j03/24-controle-edicao-antes.png": "b5f5d758779c3bd9bf48d420e829cb9e0498377bb9e6818e6b0bc4f1b9bb8b49",
+        ".work/evidence/j03/25-controle-salvamento.png": "06d6b63ddc9a18b44d740464f3bffb73fc113f4bc29953776819bb281e8feca3",
+        ".work/evidence/j03/26-controle-pos-salvamento.png": "9f88c26f590212ea7a460bdad91ae4f8fce7153669526dbd06a5bda03499448b",
+        ".work/evidence/j03/27-controle-edicao-persistida.png": "faad0bb7fc96556a19452d4da1417476018a93633268b7c1363f8f39f9e1f2b1",
+        ".work/evidence/j03/28-controle-rascunho.png": "3facac1a24cbe1153cb95e83bf349f7cc574dedea1f053c7017a7b2b9c8de66a",
+        ".work/evidence/j03/29-rascunho-troca-horizonte-ativa.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j03/29-rascunho-troca-horizonte-seletor.png": "fabce3cf2fb9fd6211851b89e7c49c9327ab4ee1cadb843655ffdcf6e0542763",
+        ".work/evidence/j03/30-horizonte-inalterada.png": "f75f2915ba583097a9b0edf59160685b77d151ed83a8ca25356f08a4a352c525",
+        ".work/evidence/j03/31-retorno-controle-ativa.png": "4a9c50e04fcbf3da815142f30a1cb4b1e64dc7c08bbab380687b8ceba18c0c02",
+        ".work/evidence/j03/31-retorno-controle-seletor.png": "add2513bb8e40ce4d597211695994918d4f907f765152e9d61a138f64bef6f2b",
+        ".work/evidence/j03/32-rascunho-descartado-controle.png": "326e0c615611a8a278af87b04ede2e480f74181d35ebe8c9d61060e29b96f017",
+        ".work/evidence/j03/33-controle-edicao-pos-recarga.png": "217f719b6608e9087a3e5f86f6ed7df38298cdf01125c1df9d52617433b8ef6b",
+        ".work/evidence/j03/34-nova-aba-controle.png": "7a81449bd301cecc48a372fbc54cb0ac31fc8336df92c1a691bae9302a56acd0",
+        ".work/evidence/j03/35-troca-com-outra-aba-ativa.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j03/36-outra-aba-apos-troca.png": "7a81449bd301cecc48a372fbc54cb0ac31fc8336df92c1a691bae9302a56acd0",
+        ".work/evidence/j03/37-outra-aba-pos-recarga.png": "17b3c5faf87e28f9e0cf2c0264b8b750e0c401c9f934ed7afc47d86466dd857e",
+        ".work/evidence/j03/38-voltar-navegador.png": "cf07db68b43067e9cd4b11029081978db8e480aafb85e51007185af6ac8928d5",
+        ".work/evidence/j03/39-rota-direta-registrar.png": "e7cf75e294d7e74a6270989acf46972a7fe71a169f1bb72e559a6bbda1cfb7d6",
+        ".work/evidence/j03/40-edicao-horizonte-mobile.png": "7633d68a67499bb49513fd063b899e6595253e7d7f5de18272eabb2170f54d12",
+        ".work/evidence/j03/41-mobile-horizonte-controle-ativa.png": "91e779ae274ca8c0ac53c20daacd9bd2157cb6614850c64dc4d87d78d66cf1e9",
+        ".work/evidence/j03/41-mobile-horizonte-controle-seletor.png": "2c4faff5f48707c338b9b426c5abeb1fbe95c58863370ba574f73139ba20b6d3",
+        ".work/evidence/j03/42-edicao-controle-mobile.png": "9b59705d6bebc2cbe8ebbb22654925a10e55efc8dd9b5cbdfde989779a19cb8b",
+        ".work/evidence/j03/43-controle-home-mobile.png": "0417a5ee9848bb88a38ece89883d19b5dfbdaaa010b62e3997ce501b8f319677",
+        ".work/evidence/j03/44-controle-registrar-mobile.png": "70dd1f3766e182fc57771ffd33c03063f99231eb466bf6c6bd7953cd6dab57de",
+        ".work/evidence/j03/45-controle-agenda-mobile.png": "75187f14c5c772f829d0e3c29c4c8fe2f56b6b9ce29d75b05b021164feae30d0",
+        ".work/evidence/j03/46-financeiro-mobile-tentativa.png": "f82c0d5b9cd7ffbaa4683320f0efb982fc946018fd371b42124bfef3d190a10a",
+        ".work/evidence/j03/47-menu-mobile-financeiro.png": "82433f5b1da535d9613e43285c089f240c653d4939f1a2df840848ce9319201d",
+        ".work/evidence/j03/48-controle-financeiro-mobile.png": "79ab124e2a2c09ffe82cfab4aca90863391474f85bcbd1d250680b63fdd16ae6",
+        ".work/evidence/j03/49-controle-configuracoes-mobile.png": "13d5612f1a6123bdf8ff70a206a716266734a51171b9d61351ae88c665a2df9e",
+        ".work/evidence/j03/50-mobile-controle-horizonte-ativa.png": "f7ec21694f6051bac85813ebf99400374e3baea3ad9952789a6d4fed7f351772",
+        ".work/evidence/j03/50-mobile-controle-horizonte-seletor.png": "e5ba3e5553e4c1d781c5d7461cc6b4a0d75cddfd55a74ce9a3e600768c567be4",
+        ".work/evidence/j03/51-horizonte-registrar-mobile.png": "f9b9954fab856837d8159a91bd0db3a1fcea55e1dbfd0c96e93c21dc17460214",
+        ".work/evidence/j03/52-final-horizonte.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j03/53-final-horizonte-viewport.png": "30c3354c1576b0965ed40c54e62e7dac409792f74ba84b786547710c210668d6",
+        ".work/evidence/j03/observations.json": "72e1baed6b494fe9f9736af56e662a237eda6ae5193a2b59509decf750865e02",
+        ".work/evidence/j03/persisted-facts.json": "1ea6eb37d0c6ce716e6cc441f0c8bb327d08bfc180c8ab7577c89532f52a1e17"
+      },
+      "preexistingTrackedChanges": [
+        "docs/context/PROJECT_STATUS.md",
+        "docs/review/ACTIVE_PHASE_PLAN.md",
+        "docs/review/CURRENT_PHASE_HANDOFF.md"
+      ]
+    },
+    "methods": [
+      "UI-first owner invite creation/cancellation and recovery signup in isolated collaborator Chromium; no association inserted outside supported flow",
+      "Directed inspection of five requested screens/components plus actual RPC/RLS/grants and membership FK/trigger contracts",
+      "Two explicitly separated technical negative calls as unassociated collaborator: self-role attempt denied; synthetic owner email lookup returned no rows",
+      "Superpowers systematic diagnosis/verification and scoped migrations-rls-contracts; no implementation or broad audit"
+    ],
+    "scenario_count": {
+      "total": 9,
+      "exercised_or_attempted": 6,
+      "blocked_not_executed": 3,
+      "notAllExercisedScenariosCompleted": true
+    },
+    "scenarios": [
+      {
+        "id": "J04-S01",
+        "status": "exercised_with_blocker",
+        "name": "Descoberta da equipe",
+        "observed": "Equipe found in navigation; listing fails on relationship and misrepresents owner as zero people.",
+        "evidence": [
+          ".work/evidence/j04/01-equipe-proprietario-desktop.png"
+        ]
+      },
+      {
+        "id": "J04-S02",
+        "status": "executed_with_findings",
+        "name": "Criação de convite",
+        "observed": "Empty contacts rejected; malformed email persisted then cancelled; valid cowboy invite generated for synthetic collaborator. Link sharing required; no email message sent by this UI.",
+        "evidence": [
+          ".work/evidence/j04/02-dialogo-convite-desktop.png",
+          ".work/evidence/j04/03-convite-contato-obrigatorio.png",
+          ".work/evidence/j04/04-email-invalido-convite-criado.png",
+          ".work/evidence/j04/08-convite-valido-gerado.png"
+        ]
+      },
+      {
+        "id": "J04-S03",
+        "status": "attempted_acceptance_blocked",
+        "name": "Aceitação e ingresso",
+        "observed": "Anonymous preview 401; recovery UI signup created intended collaborator and separate persistent session. Authenticated preview 200/is_valid=true still shown expired due array/object mismatch; acceptance not available; zero membership inserted.",
+        "evidence": [
+          ".work/evidence/j04/preview-response-sanitized.json",
+          ".work/evidence/j04/22-cadastro-colaborador-sem-vinculo.png",
+          ".work/evidence/j04/23-colaborador-autenticado-convite-valido-bloqueado.png",
+          ".work/evidence/j04/28-colaborador-desktop-convite-valido.png"
+        ]
+      },
+      {
+        "id": "J04-S04",
+        "status": "partially_executed",
+        "name": "Convites pendentes",
+        "observed": "Pending contact/role/creation/expiry visible after reload; cancellation by UI returned 204 and server state cancelled. Authenticated cancelled/nonexistent links both rendered generic expired screen. Used/real-expiry/refusal not exercised because no acceptance or waiting/manipulation.",
+        "evidence": [
+          ".work/evidence/j04/05-convite-pendente-listagem.png",
+          ".work/evidence/j04/06-convite-adicional-cancelado.png",
+          ".work/evidence/j04/26-cancelado-autenticado-mobile.png",
+          ".work/evidence/j04/27-convite-inexistente-mobile.png",
+          ".work/evidence/j04/preview-states-sanitized.json"
+        ]
+      },
+      {
+        "id": "J04-S05",
+        "status": "blocked_not_executed",
+        "name": "Alteração de papel",
+        "reason": "Member list fails and collaborator has no accepted membership; no direct association created to simulate success.",
+        "evidence": [
+          ".work/evidence/j04/01-equipe-proprietario-desktop.png",
+          ".work/evidence/j04/persisted-facts.json"
+        ]
+      },
+      {
+        "id": "J04-S06",
+        "status": "blocked_not_executed",
+        "name": "Permissões operacionais do colaborador",
+        "reason": "No cowboy/manager membership exists, so navigation as those roles would be a false certification.",
+        "evidence": [
+          ".work/evidence/j04/24-colaborador-final-sem-fazenda.png",
+          ".work/evidence/j04/persisted-facts.json"
+        ]
+      },
+      {
+        "id": "J04-S07",
+        "status": "blocked_not_executed",
+        "name": "Papéis por fazenda",
+        "reason": "Horizonte acceptance blocked; manager ingress in Controle deferred rather than generating another unfinished grant.",
+        "evidence": [
+          ".work/evidence/j04/23-colaborador-autenticado-convite-valido-bloqueado.png"
+        ]
+      },
+      {
+        "id": "J04-S08",
+        "status": "partially_executed",
+        "name": "Administração e recuperação",
+        "observed": "Duplicate pending invitation and invite to existing owner both created through UI; both extras cancelled without accepting. Double click generated one request. Unassociated collaborator self-role technical attempt denied; scoped contact negative returned zero rows. These checks do not substitute role-specific UI testing.",
+        "evidence": [
+          ".work/evidence/j04/14-dois-convites-mesmo-destinatario.png",
+          ".work/evidence/j04/15-convite-membro-existente-duplo.png",
+          ".work/evidence/j04/negative-authorization-check.json",
+          ".work/evidence/j04/contact-authorization-check.json"
+        ]
+      },
+      {
+        "id": "J04-S09",
+        "status": "partially_executed",
+        "name": "Responsividade",
+        "observed": "Owner team/invite/role selector and invitation error views exercised in 1440x900/390x844; no horizontal overflow in recorded observations. Successful acceptance/member role-edit layouts unavailable.",
+        "evidence": [
+          ".work/evidence/j04/16-equipe-convites-mobile.png",
+          ".work/evidence/j04/18-papeis-disponiveis-mobile.png",
+          ".work/evidence/j04/19-manager-selecionavel-mobile.png",
+          ".work/evidence/j04/21-convite-valido-incorreto-mobile.png",
+          ".work/evidence/j04/28-colaborador-desktop-convite-valido.png"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "id": "J04-F01",
+        "type": "confirmed_functional_defect",
+        "severity": "HIGH",
+        "screen": "/membros",
+        "preconditions": "Original owner, Horizonte, existing accepted owner membership",
+        "reproduction": [
+          "Open Equipe",
+          "Compare empty screen and error with persisted owner membership"
+        ],
+        "expected": "Load farm members or present recoverable loading error without implying zero people",
+        "observed": "PGRST relationship failure for user_fazendas/user_profiles; UI shows 0 people and empty state despite existing owner",
+        "cause": "Membros.tsx requests user_profiles!user_id, but live user_fazendas.user_id FK points to auth.users and no direct profile FK exists",
+        "impact": "Owner cannot view/manage actual members or open member role administration",
+        "recommendation": "Adapt consumer to actual relationship using scoped profile lookup or existing supported join; distinguish request failure from empty membership. Do not add migration merely to satisfy incorrect query.",
+        "evidence": [
+          ".work/evidence/j04/01-equipe-proprietario-desktop.png",
+          ".work/evidence/j04/contracts.json",
+          ".work/evidence/j04/persisted-facts.json"
+        ],
+        "source": [
+          "src/pages/Membros.tsx:101"
+        ]
+      },
+      {
+        "id": "J04-F02",
+        "type": "confirmed_functional_defect",
+        "severity": "HIGH",
+        "screen": "/invites/[REDACTED]",
+        "preconditions": "Valid pending cowboy invite, intended recipient authenticated in isolated local context",
+        "reproduction": [
+          "Owner creates valid invite",
+          "Open invite while intended recipient authenticated",
+          "Inspect real preview response and rendered screen"
+        ],
+        "expected": "Valid invite displays farm/role/inviter and permits acceptance",
+        "observed": "HTTP 200 returns one-row array with is_valid=true; screen says expired/already used, displays empty badges, no acceptance button",
+        "cause": "AcceptInvite.tsx assigns RPC table response directly to object-shaped invite; invite.is_valid is undefined. Existing InviteAuthContinuity mocks return object rather than actual array.",
+        "impact": "Blocks acceptance, role provisioning, membership administration tests and per-farm permission journey",
+        "recommendation": "Normalize/validate actual RPC result and handle zero rows; add contract-level regression using real table-return shape, not object-only mock.",
+        "evidence": [
+          ".work/evidence/j04/11-validade-servidor-ui-divergente.png",
+          ".work/evidence/j04/23-colaborador-autenticado-convite-valido-bloqueado.png",
+          ".work/evidence/j04/28-colaborador-desktop-convite-valido.png",
+          ".work/evidence/j04/preview-states-sanitized.json"
+        ],
+        "source": [
+          "src/pages/AcceptInvite.tsx:81",
+          "src/pages/AcceptInvite.tsx:90",
+          "src/pages/AcceptInvite.tsx:219",
+          "src/pages/__tests__/InviteAuthContinuity.test.tsx:145"
+        ]
+      },
+      {
+        "id": "J04-F03",
+        "type": "confirmed_functional_defect",
+        "severity": "MEDIUM",
+        "screen": "InviteMemberDialog",
+        "preconditions": "Owner can create invite",
+        "reproduction": [
+          "Submit with both contacts blank",
+          "Enter nao-e-email and submit"
+        ],
+        "expected": "Require usable contact; reject malformed email without creating invite",
+        "observed": "Blank contacts rejected clearly, but malformed email created persisted invitation with HTTP 200",
+        "cause": "Button handler only checks nonempty values; type=email alone does not validate this button-driven flow; create_invite only requires non-null contact",
+        "impact": "Creates unusable/misaddressed administrative records and misleading success",
+        "recommendation": "Validate and normalize provided contact; preserve server boundary and define accepted formats without broad new schema. Test invalid email/phone negatives.",
+        "evidence": [
+          ".work/evidence/j04/03-convite-contato-obrigatorio.png",
+          ".work/evidence/j04/04-email-invalido-convite-criado.png",
+          ".work/evidence/j04/persisted-facts.json"
+        ],
+        "source": [
+          "src/components/members/InviteMemberDialog.tsx:55",
+          "supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql:1874"
+        ],
+        "cleanup": "Malformed invitation cancelled via UI"
+      },
+      {
+        "id": "J04-F04",
+        "type": "confirmed_functional_defect",
+        "severity": "MEDIUM",
+        "screen": "/membros pending invites",
+        "preconditions": "PendingInvites already mounted",
+        "reproduction": [
+          "Create valid invite",
+          "Close dialog",
+          "Reload members screen"
+        ],
+        "expected": "New pending invite appears after creation without full reload",
+        "observed": "New invite absent until page reload; after reload it is shown",
+        "cause": "Invite success invokes loadMembers only; PendingInvites fetch effect depends on fazendaId and is not invalidated by creation",
+        "impact": "Owner may think invite failed and create another",
+        "recommendation": "Refresh/invalidate pending-invite source on successful creation; keep memberships and invite queries distinct but coordinated.",
+        "evidence": [
+          ".work/evidence/j04/09-listagem-sem-atualizar.png",
+          ".work/evidence/j04/12-listagem-atualizada-com-convite.png"
+        ],
+        "source": [
+          "src/pages/Membros.tsx:456",
+          "src/components/members/PendingInvites.tsx:73"
+        ]
+      },
+      {
+        "id": "J04-F05",
+        "type": "confirmed_functional_defect",
+        "severity": "MEDIUM",
+        "screen": "/membros summary",
+        "preconditions": "One persisted pending invite visible after reload",
+        "reproduction": [
+          "Reload with one pending invite",
+          "Compare header count with pending card"
+        ],
+        "expected": "Pending-invite summary agrees with persisted invite list",
+        "observed": "Header says 0 convite(s) while valid pending invitation is listed",
+        "cause": "counts.pending is computed from user_fazendas.accepted_at, not farm_invites pending source",
+        "impact": "Misrepresents who has been invited and who has not accepted",
+        "recommendation": "Derive invite summary from same scoped invitation source as pending list; do not persist a duplicate total.",
+        "evidence": [
+          ".work/evidence/j04/12-listagem-atualizada-com-convite.png",
+          ".work/evidence/j04/16-equipe-convites-mobile.png"
+        ],
+        "source": [
+          "src/pages/Membros.tsx:249"
+        ]
+      },
+      {
+        "id": "J04-F06",
+        "type": "confirmed_functional_defect",
+        "severity": "MEDIUM",
+        "screen": "Anonymous invite error screen",
+        "preconditions": "Anonymous local preview request receives HTTP 401",
+        "reproduction": [
+          "Open invite in fresh unauthenticated context",
+          "Observe error/recovery"
+        ],
+        "expected": "Readable error distinguishing temporary authentication/configuration failure from invalid invite",
+        "observed": "Screen shows [object Object] and labels valid invitation invalid",
+        "cause": "PostgREST error is plain object; catch converts String(error) to Error instead of extracting useful normalized message",
+        "impact": "Worker cannot understand or recover; recovery to root loses invitation destination",
+        "recommendation": "Normalize structured errors, show understandable recovery and retain invite destination; keep tokens and technical secrets out of messages.",
+        "evidence": [
+          ".work/evidence/j04/07-link-cancelado-desktop.png",
+          ".work/evidence/j04/10-convite-valido-bloqueado-desktop.png",
+          ".work/evidence/j04/20-convite-anonimo-mobile.png",
+          ".work/evidence/j04/preview-response-sanitized.json"
+        ],
+        "source": [
+          "src/pages/AcceptInvite.tsx:94"
+        ],
+        "relatedEnvironment": "J04-ENV01"
+      },
+      {
+        "id": "J04-SC01",
+        "type": "critical_authorization_gap_confirmed_by_inspection_not_exploited",
+        "severity": "BLOCKER",
+        "screen": "accept_invite RPC",
+        "preconditions": "Authenticated caller possesses valid invitation token",
+        "reproduction": [
+          "Read live function definition and authenticated EXECUTE grant",
+          "Observe contact-addressed invitation model and existing membership upsert"
+        ],
+        "expected": "Acceptance bound to intended identity and existing membership handled without unintended role overwrite",
+        "observed": "Live function checks login/status/expiry only; no email/phone match; on conflict overwrites role and reactivates membership",
+        "cause": "SECURITY DEFINER routine trusts Bearer [omitido] and performs unconditional membership upsert",
+        "impact": "A different authenticated account holding link can receive invited access; re-inviting existing member can overwrite current role",
+        "recommendation": "Define/enforce recipient binding and explicit re-invitation policy; preserve existing privileged membership, replay and transactional behavior. Add wrong-identity/already-member/owner negatives before releasing corrected acceptance.",
+        "evidence": [
+          ".work/evidence/j04/contracts.json",
+          ".work/evidence/j04/persisted-facts.json"
+        ],
+        "source": [
+          "supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql:1919"
+        ],
+        "evidenceLevel": "Live SQL body and grants inspected; no unauthorized membership creation or token replay exploit performed"
+      },
+      {
+        "id": "J04-SC02",
+        "type": "critical_integrity_gap_confirmed_by_inspection_not_exploited",
+        "severity": "BLOCKER",
+        "screen": "admin_set_member_role / admin_remove_member",
+        "preconditions": "Caller is manager in target farm; target membership may be owner",
+        "reproduction": [
+          "Read live role/change/removal routines and grants",
+          "Compare UI exclusion of owner targets with backend guards",
+          "Inspect membership triggers"
+        ],
+        "expected": "Backend enforce privileged-target/last-owner policy rather than relying on hidden UI action",
+        "observed": "Manager accepted by both routines; only assigning new owner role is restricted; target owner and last-owner checks absent. Removal targets active membership too, although UI only exposes pending removal.",
+        "cause": "SECURITY DEFINER UPDATE filters farm/target/deleted state but not protected target role or remaining ownership",
+        "impact": "Manager can logically demote/remove owner through RPC despite UI hiding owner action; ownership can be lost",
+        "recommendation": "Enforce explicit owner-target and last-owner protections server-side. Validate insufficient-role, protected-target and no-op cases without risking preserved owner.",
+        "evidence": [
+          ".work/evidence/j04/contracts.json"
+        ],
+        "source": [
+          "supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql:1969",
+          "supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql:1983",
+          "src/pages/Membros.tsx:325"
+        ],
+        "evidenceLevel": "Static consequence of live SQL/grants/trigger inspection; owner demotion/removal not attempted"
+      }
+    ],
+    "confirmed_functional_defects": 6,
+    "ux_recommendations": [
+      {
+        "id": "J04-U01",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P1 after blockers",
+        "flow": "Role selection and member badges",
+        "observed": "Owner/Manager/Cowboy and raw cowboy shown without capability description; accept page uses separate translated mapping in code but is blocked before valid presentation.",
+        "need": "Rural manager/worker understands authorization level distinct from occupation.",
+        "proposal": "Consistent Proprietário/Gerente/Operador labels plus concise descriptions grounded in corrected effective contract; retain enum values.",
+        "benefit": "Reduces mistaken role assignment without changing domain/security for appearance.",
+        "costRisk": "Low UI cost; descriptions must wait for authorization-contract gaps to be resolved.",
+        "evidence": [
+          ".work/evidence/j04/18-papeis-disponiveis-mobile.png",
+          ".work/evidence/j04/19-manager-selecionavel-mobile.png"
+        ]
+      },
+      {
+        "id": "J04-U02",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P2",
+        "flow": "Invite / role-change context",
+        "observed": "Invite dialog is generic while farm name remains in blurred global header.",
+        "need": "Know which property receives invitation/access change.",
+        "proposal": "Show farm name and recipient in dialog and success/confirmation; reuse active farm context.",
+        "benefit": "Prevents administrative mistakes when switching properties.",
+        "costRisk": "Low presentation effort; do not create parallel tenant state.",
+        "evidence": [
+          ".work/evidence/j04/02-dialogo-convite-desktop.png",
+          ".work/evidence/j04/08-convite-valido-gerado.png"
+        ]
+      },
+      {
+        "id": "J04-U03",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P2",
+        "flow": "Duplicate invite / existing member",
+        "observed": "UI creates second valid invite for same recipient and also creates invite for original owner; no duplicate/member warning. Extra invitations cancelled; no association changed.",
+        "need": "Understand whether to reuse, resend or change existing access.",
+        "proposal": "Detect and explain existing pending invite/membership; offer copy/reissue or proper role-management flow after contracts are fixed. Do not impose physical uniqueness without agreed semantics.",
+        "benefit": "Reduces duplicate invitations and accidental role overwrite.",
+        "costRisk": "Low/medium query/UI cost; expiry, re-invitation and concurrency semantics need explicit decision.",
+        "evidence": [
+          ".work/evidence/j04/14-dois-convites-mesmo-destinatario.png",
+          ".work/evidence/j04/15-convite-membro-existente-duplo.png"
+        ]
+      },
+      {
+        "id": "J04-U04",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P1 after blockers",
+        "flow": "Error recovery and collaborator registration",
+        "observed": "Error offers only Voltar para o inicio; signup recovery ends at zero-farm selector with Criar nova fazenda. Invitation had to be reopened for diagnosis.",
+        "need": "Continue joining invited farm rather than assume responsibility for creating another property.",
+        "proposal": "Retain invitation destination through recovery; offer retry/login/signup with context and actionable invalid/cancelled/expired messages.",
+        "benefit": "Reduces abandonment and wrong next-step interpretation.",
+        "costRisk": "Low/medium routing effort; no bypass of acceptance or membership rules.",
+        "evidence": [
+          ".work/evidence/j04/20-convite-anonimo-mobile.png",
+          ".work/evidence/j04/22-cadastro-colaborador-sem-vinculo.png",
+          ".work/evidence/j04/23-colaborador-autenticado-convite-valido-bloqueado.png"
+        ]
+      },
+      {
+        "id": "J04-U05",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P2",
+        "flow": "Pending invitations and member details",
+        "observed": "Pending list shows contact/role/dates but no sent-message delivery; success asks owner to share link. Member list is unavailable; joined date field exists but is not presented in card code.",
+        "need": "Distinguish link generated from message sent, invitation pending from active access.",
+        "proposal": "Use Link gerado — compartilhe com a pessoa; retain creation/expiry, add accepted-at when available, and fix counters before adding more indicators.",
+        "benefit": "Clarifies administrative state with existing data.",
+        "costRisk": "Low presentation cost after functional blockers; no new sent/delivered flags without reliable delivery source.",
+        "evidence": [
+          ".work/evidence/j04/05-convite-pendente-listagem.png",
+          ".work/evidence/j04/08-convite-valido-gerado.png",
+          ".work/evidence/j04/16-equipe-convites-mobile.png"
+        ]
+      }
+    ],
+    "data_assessment": [
+      {
+        "information": "Nome de exibição",
+        "exists": "user_profiles.display_name and signup metadata exist; both scoped users currently have zero user_profiles rows.",
+        "decision": "Identify people instead of UUID/email.",
+        "viewers": "Owner/manager and authorized teammates",
+        "requirement": "Reuse existing name; do not add another field.",
+        "origin": "Canonical user profile; reconcile signup/profile gap before claiming names available.",
+        "newField": false,
+        "duplicationRisk": "High if copied into every membership/invite.",
+        "costRisk": "Low for presentation after profile/member fixes; data consistency investigation still needed.",
+        "recommendation": "Fix consumption/availability; do not request the name again per farm."
+      },
+      {
+        "information": "Função operacional / cargo",
+        "exists": "Not exposed as dedicated role-independent field in inspected profile/membership model.",
+        "decision": "Potentially distinguish who performs field, milking or administrative work.",
+        "viewers": "Farm manager and collaborator",
+        "requirement": "Optional and later, only if real operation needs it.",
+        "origin": "Would require explicit farm-scoped business data distinct from authorization enum.",
+        "newField": "Candidate only",
+        "duplicationRisk": "Must not become second permission source.",
+        "costRisk": "Medium contract/sync/UI cost; benefit not demonstrated with no operational team activity.",
+        "recommendation": "Hypothesis to validate; do not equate Cowboy with profession or introduce now."
+      },
+      {
+        "information": "Contato",
+        "exists": "Auth email, profile phone and invite email/phone exist. Invite allows either; current signup required synthetic phone even for email invitation.",
+        "decision": "Deliver invitation and contact collaborator.",
+        "viewers": "Owner/manager and authorized peers under privacy rules",
+        "requirement": "At least usable invite destination under existing contract; extra phone necessity to validate.",
+        "origin": "Auth identity and user profile; invitation keeps intended destination.",
+        "newField": false,
+        "duplicationRisk": "Avoid extra contact copies beyond invitation snapshot needed for authorization.",
+        "costRisk": "Low validation/presentation effort; phone normalization and identity verification affect security.",
+        "recommendation": "Validate contacts and explain sharing. Evaluate whether email-invited worker can complete phone later; do not relax identity-binding requirement."
+      },
+      {
+        "information": "Estado do convite",
+        "exists": "farm_invites.status, expires_at, deleted_at; validity/expiry derived. Cancellation actually tested; refusal/acceptance blocked.",
+        "decision": "Know who still needs action.",
+        "viewers": "Owner/manager and invited recipient",
+        "requirement": "Automatic/derived, never manual.",
+        "origin": "farm_invites and server clock/validity.",
+        "newField": false,
+        "duplicationRisk": "Avoid separate manual active/pending flags.",
+        "costRisk": "Low once preview/list/counter contracts are corrected.",
+        "recommendation": "Differentiate pending, cancelled, rejected, used and expired; do not label every response expired."
+      },
+      {
+        "information": "Data de ingresso",
+        "exists": "user_fazendas.accepted_at; invitation creation/expiry already available.",
+        "decision": "Identify when access began.",
+        "viewers": "Owner/manager and collaborator",
+        "requirement": "Derived from actual acceptance, not user input.",
+        "origin": "Membership accepted_at, distinct from invitation created_at.",
+        "newField": false,
+        "duplicationRisk": "Do not copy invitation creation date as joining date.",
+        "costRisk": "Low presentation effort after members load.",
+        "recommendation": "Show when useful; do not infer while no accepted collaborator exists."
+      },
+      {
+        "information": "Fazendas às quais pertence",
+        "exists": "user_fazendas association and role per property.",
+        "decision": "Understand multi-farm responsibility and correct context.",
+        "viewers": "Collaborator and managers only for farms they may inspect.",
+        "requirement": "Derived, never copied into profile as free text/list.",
+        "origin": "Authorized membership queries scoped by farm/user.",
+        "newField": false,
+        "duplicationRisk": "Avoid parallel list of farm IDs or uncontrolled cross-tenant disclosure.",
+        "costRisk": "Low/medium query/privacy cost.",
+        "recommendation": "Reuse selector and membership summaries; different roles on two farms remain untested here."
+      },
+      {
+        "information": "Descrição compreensível das permissões",
+        "exists": "Authorization enum and actual guards exist; friendly descriptions missing in invite form.",
+        "decision": "Assign least necessary access with understanding.",
+        "viewers": "Owner, manager, collaborator",
+        "requirement": "Derived explanatory text, not another role input.",
+        "origin": "Corrected canonical permission rules, not UI assumptions.",
+        "newField": false,
+        "duplicationRisk": "Do not maintain competing permission matrix or role enum.",
+        "costRisk": "Low copy effort after critical contract review.",
+        "recommendation": "Translate labels and describe actual capabilities, distinguishing read from write and farm scope."
+      },
+      {
+        "information": "Responsabilidade por atividade / escala",
+        "exists": "Not established as requirement/source by this journey.",
+        "decision": "Potential assignment of concrete work.",
+        "viewers": "Would depend on actual operational workflow.",
+        "requirement": "Do not request in initial team onboarding.",
+        "origin": "Future task-assignment model if separately justified; not inferred from auth role.",
+        "newField": "Not recommended now",
+        "duplicationRisk": "Would mix team authorization with Agenda/task responsibility.",
+        "costRisk": "High relative to evidence; expands domain, offline and UI scope.",
+        "recommendation": "Reject for this block absent demonstrated need."
+      },
+      {
+        "information": "Histórico administrativo de mudanças de papel",
+        "exists": "No reliable role-history source demonstrated in inspected routines/triggers; membership updated_at is current-state timestamp.",
+        "decision": "Explain who granted/revoked access and investigate mistakes.",
+        "viewers": "Authorized owner/administrator",
+        "requirement": "Factual system record if approved, not manual cadastro.",
+        "origin": "Would need trustworthy administrative events/source; inspected role RPC only updates membership and timestamp.",
+        "newField": "Candidate requires contract/source, not cosmetic field",
+        "duplicationRisk": "Do not fabricate historical facts from current role/updated_at.",
+        "costRisk": "Medium/high persistence, privacy and retention implications.",
+        "recommendation": "Consider after authorization blockers with explicit audit need; do not claim history exists."
+      }
+    ],
+    "critical_assessment": {
+      "blockersFirst": [
+        "Fix members consumer/actual relationship without turning errors into empty state",
+        "Normalize and validate preview response, including zero rows and structured error messages",
+        "Resolve recipient-binding and protected-owner/last-owner guards before releasing acceptance/admin-role operations"
+      ],
+      "topThreeBenefitVersusEffort": [
+        "Coordinate invitation refresh/counters with persisted source: removes demonstrated ambiguity and repeat invitations",
+        "Use consistent Portuguese role names with accurate short capability explanations after contract review",
+        "Expose farm/recipient context in dialogs and retain invite destination through error recovery"
+      ],
+      "adoptionObstacles": [
+        "Owner sees zero members despite being an accepted owner",
+        "Invited worker sees valid invitation called expired and cannot enter",
+        "Raw English roles, [object Object] and schema/JWT errors provide poor recovery guidance"
+      ],
+      "authorizationConclusions": "Two live-contract critical gaps inspected, not exploited; only outsider/self-role and scoped contact negatives executed. No cowboy/manager, full RLS or cross-farm authorization approval.",
+      "newData": "No new mandatory field justified. Operational function may be optional later; role-history requires reliable factual source before UI claims.",
+      "rejected": [
+        "Create another authorization role enum merely to translate labels",
+        "Treat professional occupation as security permission",
+        "Persist parallel member counts or farm-membership lists",
+        "Add task responsibility or work schedules without concrete operational need",
+        "Show updated_at/current role as historical administrative audit",
+        "Impose physical uniqueness for invitations without defining reissue/expiry/concurrency semantics"
+      ],
+      "nextJourney": "J05 not started. Owner environment remains available; journeys depending on collaborator access require corrected acceptance, membership and role verification."
+    },
+    "critical_contract_gaps_by_inspection": 2,
+    "environment_limitations": [
+      {
+        "id": "J04-ENV01",
+        "observed": "Anonymous local preview returned HTTP 401/PGRST301 JWT cryptographic operation failed. Authenticated original owner/intended recipient requests returned 200.",
+        "cause": "Anonymous credential/JWT-validation root cause not isolated; no environment credential/configuration changed.",
+        "evidence": [
+          ".work/evidence/j04/preview-response-sanitized.json"
+        ],
+        "scope": "Does not explain authenticated array/object defect and is not proof of invalid invitation."
+      }
+    ],
+    "limitations": [
+      "No successful invite acceptance, rejection, already-used link, elapsed-time expiration, active-member removal, role change or live cowboy/manager module comparison.",
+      "Protected-owner and wrong-recipient critical paths inspected, never executed to mutate preserved memberships.",
+      "Anonymous JWT-validation failure root cause unresolved; no local credential or backend migration reset/reconciliation repeated.",
+      "Owner team UI and blocked invitation states tested on desktop/mobile, not physical device or virtual keyboard.",
+      "No global suite, build, lint, full baseline recertification, remote access mutation or production test; scope is local diagnosis/functional evaluation.",
+      "Some popup captures were repeated with viewport screenshots to preserve popup state; no visual defect inferred from capture timing."
+    ],
+    "contract_summary": {
+      "evidenceLevel": "Inspected live SQL/RLS and consumer conditions; only listed local operations functionally exercised. No hypothetical full role matrix.",
+      "rules": [
+        {
+          "operation": "Create/cancel invite",
+          "owner": "allowed",
+          "manager": "allowed; cannot invite owner",
+          "cowboy": "denied by role_in_fazenda contract",
+          "tested": "Owner create/cancel only"
+        },
+        {
+          "operation": "Assign owner role",
+          "owner": "allowed by SQL",
+          "manager": "denied by SQL",
+          "cowboy": "denied by SQL",
+          "tested": "Not exercised"
+        },
+        {
+          "operation": "Change/remove existing role",
+          "owner": "SQL allowed",
+          "manager": "SQL allowed including unprotected owner target",
+          "cowboy": "SQL denied",
+          "tested": "Only outsider/self negative returned Forbidden; no owner mutation attempted"
+        },
+        {
+          "operation": "Read financial records",
+          "owner": "member SELECT policy",
+          "manager": "member SELECT policy",
+          "cowboy": "member SELECT policy",
+          "tested": "No collaborator role surface certified"
+        },
+        {
+          "operation": "Write financial records / edit farm settings",
+          "owner": "owner/manager policy",
+          "manager": "owner/manager policy",
+          "cowboy": "not allowed by scoped policies",
+          "tested": "Not exercised here"
+        },
+        {
+          "operation": "Accept invite",
+          "rule": "Authenticated plus valid token/status/expiry; no recipient comparison; membership upsert",
+          "tested": "UI prevented acceptance even for intended authenticated recipient"
+        },
+        {
+          "operation": "Reject invite",
+          "rule": "Public endpoint by token; pending -> rejected",
+          "tested": "Unavailable in actual blocked UI; no RPC substitute performed"
+        },
+        {
+          "operation": "Expiration",
+          "rule": "7-day default; validity checks expires_at against now",
+          "tested": "No waiting/time manipulation; expiry execution not certified"
+        },
+        {
+          "operation": "Read member email",
+          "rule": "Self/app admin/shared undeleted farm membership in live function",
+          "tested": "Unassociated collaborator querying synthetic owner returned zero rows"
+        }
+      ],
+      "removalAvailability": "RPC supports soft-deleting active membership, but current Membros exposes remove only for pending status; active-member removal not functionally demonstrated."
+    }
+  }
+}

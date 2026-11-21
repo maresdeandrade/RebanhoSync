@@ -1,7 +1,6 @@
-```md
 # Supabase RLS — RebanhoSync
 
-Atualizado em: 2026-10-21
+Atualizado em: 2026-11-21
 
 ## Objetivo
 
@@ -30,7 +29,13 @@ Definir o contrato técnico para Supabase, RLS, isolamento multi-tenant, RPCs, p
 5. Docs derivados.
 6. Histórico/archive.
 
-## Ambiente atual do Sync Sanitário v2
+## Snapshot do Sync Sanitário v2 — 19 a 21/10/2026
+
+Os registros R01–R04B.2 abaixo preservam o estado observado nas datas indicadas.
+Referências históricas a migrations não aplicadas não descrevem o inventário atual:
+em 21/11/2026, as 83 versões anteriores constam no remoto, enquanto J04/Bloco 1
+continuam somente locais. [Estado vigente](../context/PROJECT_STATUS.md#estado-atual)
+e [inventário somente leitura](../review/evidence/BLOCK1_INTEGRATION_20261121.json).
 
 - Backend anteriormente chamado staging: `zqloazqzhwauamcejmuz`,
   confirmado como consumidor do frontend de produção; não é homologação isolada.
@@ -76,6 +81,50 @@ O `sync-batch` autentica e valida membership antes da execução server-side. As
 ---
 
 ## Regras de RLS
+
+### Flags da fazenda e perfil — Bloco 1 local, 20/11/2026
+
+A migration `20261121023104_block1_farm_security_flags_guard.sql`, posterior à J04,
+acrescenta uma guarda `BEFORE UPDATE OF metadata` em `fazendas`. Mudança efetiva de
+`eventos_rollout.strict_rules_enabled` ou `strict_anti_teleporte` exige owner ativo da
+própria fazenda. Ausência/valor não booleano mantém o default efetivo `true`, conforme
+o resolver existente. RLS e permissões legítimas de manager para os demais dados
+permanecem. A guarda usa o lock da linha também adotado pela administração J04;
+payload antigo de manager e autoridade revogada enquanto a escrita espera foram testados.
+
+Os escritores de metadata em Editar Fazenda e Configurações condicionam o salvamento
+ao ID e `updated_at` carregados, exigem uma linha retornada e rejeitam conflito com
+orientação de recarga. Isso impede que preferências antigas de um owner restaurem flags.
+Essa proteção do cliente complementa a guarda no servidor; não concede autoridade.
+
+Perfil usa upsert em `user_profiles.user_id` com retorno confirmado. A PK, FK para
+Auth e RLS self de INSERT/UPDATE já existentes permitem criar a linha ausente e
+rejeitam escrita por outra identidade. Email e identidade canônica continuam no Auth;
+perfil e metadata editável não comprovam autorização. Não houve mudança no storage.
+
+As migrations J04 e da guarda estão aplicadas somente localmente neste recorte;
+publicação remota e frontend corrigido continuam pendentes de integração autorizada.
+
+### Convites e administração de membros
+
+A migration `20261120231349_j04_members_invites_authorization.sql` vincula a aceitação
+ao destinatário confirmado em `auth.users`. Email informado no convite é o identificador
+vinculante; telefone adicional é contato. Convite somente por telefone exige número
+correspondente e `phone_confirmed_at`; perfil e `user_metadata` não comprovam identidade.
+O fluxo atual da aplicação não verifica telefone: email confirmado continua disponível
+como alternativa, sem introdução de SMS/OTP nesse contrato.
+
+`accept_invite` mantém retorno `void`; `get_invite_preview` mantém retorno tabular
+(array REST) com `fazenda_id` adicional para selecionar o contexto após o ingresso.
+Replay de convite aceito é uma operação sem efeito para vínculo ativo e nunca restaura
+papel anterior. Convite novo não altera vínculo ativo. Vínculo desligado exige convite
+pendente emitido depois do desligamento; convite antigo não reativa o acesso.
+
+As RPCs de aceitação, criação/cancelamento de convite e administração de membros
+serializam suas decisões pela linha da fazenda, revalidando autoridade após o lock.
+Gerente não administra proprietário nem concede esse papel; rebaixamento ou remoção
+do último proprietário é rejeitado, inclusive em operações concorrentes. Escrita direta
+em `user_fazendas` continua indisponível aos clientes. Não há mudança nas policies RLS.
 
 Cada tabela tenant-scoped deve avaliar:
 
@@ -208,7 +257,5 @@ rtk pnpm run build
 * [ ] search_path controlado quando aplicável.
 * [ ] Nenhum service_role no client.
 * [ ] Baseline Supabase validada se houve alteração relevante.
-
-```
 
 ```

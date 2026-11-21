@@ -1,6 +1,6 @@
 # Matriz de Rastreabilidade Funcional — RebanhoSync
 
-Baseline técnica desta atualização dirigida: `main@175e9dee3639ea1726f9c62c9b0d208e1452d7dc` (#302); #301 integrada e validada. Linhas não afetadas conservam o recorte original.
+Baseline integrada confirmada em 21/11/2026: `main@157376d90b3f3ac6ccfe806d98f1de37b2007644` (#305). O adendo J04/Bloco 1 abaixo descreve o pacote local posterior, ainda não integrado/publicado. Linhas não afetadas conservam seu recorte original.
 Origem histórica da matriz: Etapa 2A reconciliada em `27a3bed`; a atualização de 18/11/2026 corrige somente os requisitos afetados pelas evoluções comprovadas.
 Escopo: reconciliação documental, sem runtime ou novos requisitos de produto. Evidências anteriores são reaproveitadas, não reexecutadas nesta atualização.
 
@@ -10,17 +10,32 @@ Escopo: reconciliação documental, sem runtime ou novos requisitos de produto. 
 - `IMPLEMENTED`, `PARTIAL`, `PLANNED`, `NOT_PROVEN` e `DEPRECATED` classificam a implementação da capacidade descrita, não a aprovação no escopo de produto.
 - Escopo de produto, implementação, validação, integração e rollout são dimensões distintas. Um estado técnico não cria compromisso de produto; ver `docs/product/CAPABILITY_MAP.md` e `docs/product/MVP_SCOPE.md`.
 - Os caminhos e símbolos identificam evidência versionada na baseline; código presente não prova execução/aceite de teste, rollout ou implantação remota.
-- Os testes citados existem no repositório e **não foram reexecutados nesta reconciliação**. “Não identificado” significa que a busca dirigida não comprovou a capacidade, não prova de ausência global.
+- As linhas históricas mantêm seus limites de testes não reexecutados. O adendo Bloco 1 identifica evidência focal própria; não certifica os demais módulos. “Não identificado” significa que a busca dirigida não comprovou a capacidade, não prova de ausência global.
 - O recorte original de integração foi `origin/main@27a3bed`; #302 e entregas anteriores estão na main atual, enquanto #301 está integrada na baseline local. Implantação em staging/produção e estado remoto atual não foram verificados nesta etapa.
 - Referências a migrations nomeiam artefatos do repositório; não certificam que tenham sido aplicadas em qualquer ambiente remoto.
 
 ## Atualização de 18/11/2026
 
-#268/#274 integram colaboração/fechamento/continuidade e comando neonatal durável; #283/#284 classificações; #285–#291 triagem, planejamento manual e recuperação. #295–#300 superam fixtures/P33 e corrigem Agenda/B19. #302 integra monitoramento, avaliações factuais e controle estratégico; junho não materializa Agenda. #301 integrada valida vínculo estoque–produto V2 e indicadores. [SHAs e CI](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+#268/#274 integram colaboração/fechamento/continuidade e comando neonatal durável; #283/#284 classificações; #285–#291 triagem, planejamento manual e recuperação. #295–#300 superam fixtures/P33 e corrigem Agenda/B19. #302 integra monitoramento, avaliações factuais e controle estratégico; junho não materializa Agenda. #301 integrada valida vínculo estoque–produto V2 e indicadores. [SHAs e CI](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
 
 Não confundir gate remoto desligado, ausência de deploy ou falta de homologação universal com falta do contrato implementado. Este adendo não amplia o escopo MVP nem certifica stores/atores não examinados.
 
+## Bloco 1 — rastreabilidade do pacote local
+
+São capacidades existentes corrigidas e verificadas, sem novo escopo MVP ou aprovação automática de UX. `IMPLEMENTED` nesta tabela significa implementação local do pacote; integração e publicação ainda pendentes. A evidência versionada e o inventário estão no [registro da integração](../review/evidence/BLOCK1_INTEGRATION_20261121.json).
+
+| ID | Capacidade | Implementação e contrato | Evidência focal | Estado e limite |
+|---|---|---|---|---|
+| RS-IAM-003 | Equipe, convites e papéis | `Membros.tsx`, `AcceptInvite.tsx`, componentes de membros; migration `20261120231349_j04_members_invites_authorization.sql`; identidade confirmada, replay sem elevação, reingresso e último owner | `AcceptInvite`, `InviteAuthContinuity`, `Membros`, `InviteMemberDialog`; `tests/codex/member-invites*.mjs` | IMPLEMENTED local; interface não oferece Ajustar papel para alvo Owner; servidor continua autoritativo. |
+| RS-IAM-004 | Flags e configuração concorrente por fazenda | `EditarFazenda.tsx`, `Configuracoes.tsx`, `src/lib/farms/updateFarm.ts`; migration `20261121023104_block1_farm_security_flags_guard.sql`; trigger owner e UPDATE por ID/updated_at | `EditarFazenda`, `updateFarm`; `block1-security.local.test.mjs`, `block1-concurrency.local.test.mjs`, Chromium | IMPLEMENTED local; não cria fila administrativa nem certifica qualquer cliente/remoto. |
+| RS-PREF-001 | Perfil e preferências pessoais | `Perfil.tsx`, `sanitaryReminders.ts`; upsert self com retorno, validação de silêncio; Auth permanece identidade canônica | `PerfilPersistence`, `PerfilAdminNavigation`, `sanitaryReminders`; Chromium de nova sessão/rede | IMPLEMENTED local; sem falso sucesso para zero linha; avatar, tema dinâmico e novos canais não certificados/entregues. |
+| RS-UX-001 | Criação, onboarding e ações financeiras coerentes | `CriarFazenda.tsx`, `OnboardingInicial.tsx`, `Financeiro.tsx`; área positiva, critérios sem revisão fictícia e ações por papel | `CriarFazendaValidation`, `OnboardingInicial.e2e`, `FinanceiroSubmit`; Chromium | IMPLEMENTED local; operador não recebe escrita financeira; criar conta/fazenda não executa manejo. |
+
+Criação/seleção/contexto e isolamento continuam relacionados aos requisitos RS-IAM-001/002 existentes. Recovery não está exposto; rascunhos e tema dinâmico permanecem nas [lacunas](../context/KNOWN_GAPS.md#bloco-1--situação-reconciliada-em-21112026). O [guia](../manuals/USER_MANUAL_INDEX.md) descreve somente essa disponibilização local.
+
 ## Matriz
+
+O adendo abaixo mantém a distinção entre implementação e disponibilização das linhas posteriores; não altera retroativamente os recortes sanitários/operacionais já descritos.
 
 | ID | Domínio | Capacidade/requisito | Fonte normativa | Implementação / persistência / segurança | Testes existentes / evidências referenciadas | Estado | Lacuna, gate ou evidência adicional |
 |---|---|---|---|---|---|---|---|

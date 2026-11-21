@@ -1,7 +1,15 @@
 # Copy Guidelines — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
+
+## Copy confirmada e limites do Bloco 1 local
+
+Usar `Perfil atualizado com sucesso` e `Preferencias atualizadas com sucesso` somente após confirmação de gravação. Não exibir `[object Object]` em erro estruturado nem traduzir carregamento malsucedido como ausência de dados. Conflito de metadata informa alteração/acesso e orienta recarga antes de salvar novamente.
+
+Os nomes reais de papel ainda aparecem como Owner, Manager e Cowboy em algumas superfícies. No manual, explicar Proprietário, Gerente e Operador sem criar permissão adicional. `Link gerado` exige compartilhamento manual; não usar “convite enviado” como prova de entrega. `Em dia` não comprova uma alteração específica no servidor.
+
+Modo Completo, tipo Corte/Leite/Mista e etapas produtivas são dimensões diferentes. Recovery ausente, reações do tema Sistema e proteção geral de rascunho não devem ser anunciados como disponíveis. [FAQ atual](../manuals/support/FAQ_LOGIN.md), [guia](../manuals/USER_MANUAL_INDEX.md) e [estado de disponibilização](../context/PROJECT_STATUS.md#estado-atual).
 
 ## Objetivo
 

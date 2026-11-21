@@ -20,6 +20,8 @@ import {
 } from "@/lib/farms/measurementConfig";
 import { getWeightUnitLabel } from "@/lib/format/weight";
 import { supabase } from "@/lib/supabase";
+import { updateFarmFromSnapshot, type FarmWriteSnapshot } from "@/lib/farms/updateFarm";
+import { authOperationError } from "@/lib/auth/errorMessage";
 import { showError, showSuccess } from "@/utils/toast";
 import {
   Select,
@@ -46,6 +48,7 @@ export default function Configuracoes() {
     useAuth();
   const [farmName, setFarmName] = useState<string>("");
   const [farmMetadata, setFarmMetadata] = useState<Record<string, unknown>>({});
+  const [farmSnapshot, setFarmSnapshot] = useState<FarmWriteSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingLifecycle, setIsSavingLifecycle] = useState(false);
   const [isSavingMeasurement, setIsSavingMeasurement] = useState(false);
@@ -66,7 +69,7 @@ export default function Configuracoes() {
       try {
         const { data, error } = await supabase
           .from("fazendas")
-          .select("nome, metadata")
+          .select("nome, metadata, updated_at")
           .eq("id", activeFarmId)
           .single();
 
@@ -75,16 +78,14 @@ export default function Configuracoes() {
         }
 
         setFarmName(data?.nome ?? "");
+        setFarmSnapshot({farmId: activeFarmId, updatedAt: data?.updated_at});
         setFarmMetadata(
           data?.metadata && typeof data.metadata === "object"
             ? (data.metadata as Record<string, unknown>)
             : {},
         );
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Nao foi possivel carregar configuracoes.";
+        const message = authOperationError(error, "Nao foi possivel carregar configuracoes.");
         showError(message);
       } finally {
         setIsLoading(false);
@@ -116,23 +117,14 @@ export default function Configuracoes() {
     setIsSavingLifecycle(true);
     try {
       const metadata = withFarmLifecycleConfig(farmMetadata, config);
-      const { error } = await supabase
-        .from("fazendas")
-        .update({ metadata })
-        .eq("id", activeFarmId);
-
-      if (error) {
-        throw error;
-      }
+      const saved = await updateFarmFromSnapshot(activeFarmId, farmSnapshot, { metadata });
 
       setFarmMetadata(metadata);
+      setFarmSnapshot({farmId: activeFarmId, updatedAt: saved.updated_at});
       await refreshSettings();
       showSuccess("Regras de estagio atualizadas.");
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Nao foi possivel salvar as configuracoes.";
+      const message = authOperationError(error, "Nao foi possivel salvar as configuracoes.");
       showError(message);
     } finally {
       setIsSavingLifecycle(false);
@@ -150,23 +142,14 @@ export default function Configuracoes() {
       const metadata = withFarmMeasurementConfig(farmMetadata, {
         weight_unit: pendingWeightUnit,
       });
-      const { error } = await supabase
-        .from("fazendas")
-        .update({ metadata })
-        .eq("id", activeFarmId);
-
-      if (error) {
-        throw error;
-      }
+      const saved = await updateFarmFromSnapshot(activeFarmId, farmSnapshot, { metadata });
 
       setFarmMetadata(metadata);
+      setFarmSnapshot({farmId: activeFarmId, updatedAt: saved.updated_at});
       await refreshSettings();
       showSuccess("Unidade de peso atualizada.");
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Nao foi possivel salvar a unidade.";
+      const message = authOperationError(error, "Nao foi possivel salvar a unidade.");
       showError(message);
     } finally {
       setIsSavingMeasurement(false);

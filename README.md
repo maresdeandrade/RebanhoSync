@@ -8,8 +8,8 @@ Plataforma offline-first para gestão pecuária, com React/TypeScript, Dexie e S
 - F24.5 está integrada. F24.6 permanece ativa; F24.6A1 foi integrada pelo PR #200.
 - A certificação F24.6A1 é limitada ao reconnect 1k descrito no [relatório](docs/review/F24_6A1_RECONNECT_1K_CERTIFICATION.md); não declara capacidade geral de escala.
 - F24.6A2 é proposta de inventário estático; seu escopo e critérios precisam ser formalizados antes do início.
-- Baseline integrada confirmada em 18/11/2026: `main@175e9dee` (#302). Protocolos da Fazenda, monitoramento ON/OFF, avaliações factuais e controle estratégico individual estão integrados; junho permanece contextual.
-- A [PR #301](https://github.com/maresdeandrade/RebanhoSync/pull/301) está aberta, com gate READY em `6cdc7284`: vínculo estoque–produto V2, previsão de consumo e indicadores de aplicação/consumo/perdas. Ainda não integra a `main`.
+- Baseline remota confirmada em 21/11/2026: `main@157376d9` (#305), incluindo #303/#304 e a consolidação produto–classe. Publicação técnica e homologação operacional mantêm os limites do estado canônico.
+- J04/Bloco 1: correções locais de acesso, persistência e configurações com documentação reconciliada; pacote preparado para revisão de integração, ainda sem push/merge/deploy ou aplicação remota das duas migrations.
 - O produto permanece em desenvolvimento, sem produção operacional declarada. Disponibilização remota é separada da conclusão local; não há requisito de suporte a versões antigas inexistentes.
 
 Consulte o [estado canônico do projeto](docs/context/PROJECT_STATUS.md) para fase, limites e distinção entre implementação, integração e ativação.
@@ -29,6 +29,7 @@ Consulte o [estado canônico do projeto](docs/context/PROJECT_STATUS.md) para fa
 ## Navegação documental
 
 - [Índice da documentação](./docs/README.md)
+- [Guia do Usuário — índice único](./docs/manuals/USER_MANUAL_INDEX.md)
 - [Matriz de rastreabilidade](./docs/product/REQUIREMENTS_TRACEABILITY.md)
 - [Estado atual](./docs/context/PROJECT_STATUS.md)
 - [Roadmap](./docs/product/ROADMAP.md)

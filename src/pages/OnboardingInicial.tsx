@@ -110,7 +110,7 @@ const OnboardingInicial = () => {
     const localizacao =
       farm?.municipio && farm?.estado
         ? `${farm.municipio} - ${farm.estado}`
-        : "Localizacao nao revisada";
+        : farm?.estado || farm?.municipio || "Localizacao opcional nao informada";
     const tipoProducao = farm?.tipo_producao
       ? `Producao ${farm.tipo_producao}`
       : "Tipo de producao nao definido";
@@ -122,13 +122,14 @@ const OnboardingInicial = () => {
         shortTitle: "Fazenda",
         description:
           "Confirme localizacao e tipo de producao antes de montar a estrutura.",
-        done: Boolean(farm?.tipo_producao || farm?.municipio || farm?.estado),
+        done: Boolean(farm?.nome?.trim() && farm?.tipo_producao),
         currentState: `${localizacao} · ${tipoProducao}`,
         impact:
           "Isso evita cadastro torto logo no comeco e deixa a fazenda pronta para uso real.",
         successCriteria: [
-          "Nome e localizacao revisados.",
+          "Nome da fazenda informado.",
           "Tipo de producao definido.",
+          "Municipio e estado opcionais; confira-os quando informados.",
         ],
         actions: [
           {

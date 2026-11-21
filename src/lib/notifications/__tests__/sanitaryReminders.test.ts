@@ -5,7 +5,17 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   isWithinQuietHours,
   resolveNotificationPreferences,
+  validateQuietHours,
 } from "@/lib/notifications/sanitaryReminders";
+
+it.each([['','06:00'],['22:00',''],['06:00','06:00'],['25:00','06:00'],['22:00','06:99']])('rejects and normalizes invalid quiet hours %s–%s', (start,end) => {
+  expect(validateQuietHours(start,end)).not.toBeNull();
+  expect(resolveNotificationPreferences({quiet_hours:{start,end}}).quietHours).toBeNull();
+});
+it('preserves an overnight quiet interval on normalization',()=>{
+  expect(validateQuietHours('22:00','06:00')).toBeNull();
+  expect(resolveNotificationPreferences({quiet_hours:{start:'22:00',end:'06:00'}}).quietHours).toEqual({start:'22:00',end:'06:00'});
+});
 import type { SanitaryAttentionSummary } from "@/lib/sanitario/compliance/attention";
 
 const baseSummary: SanitaryAttentionSummary = {

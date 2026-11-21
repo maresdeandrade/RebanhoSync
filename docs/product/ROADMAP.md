@@ -1,15 +1,21 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-11-18
+Atualizado em: 2026-11-21
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no cenário certificado)**
-Próxima frente: **Fase 24 — continuidade localizada: decisão de integração da #301 validada, exceções curatoriais necessárias ao alvo escolhido e lacunas funcionais comprovadas; sem nova fase, benchmark ou rollout automático.**
+Próxima frente: **Fase 24 — revisão do pacote local J04/Bloco 1 e publicação somente sob autorização própria; sem nova fase, jornada ou rollout automático.**
 Fase anterior: **Fase 23 — Simulação Produtiva e Comercial (CLOSED)**
 
 ## Continuidade reconciliada — 18/11/2026
 
-#302 está integrada à `main@175e9dee`; #301 está integrada na baseline local autorizada, com gate READY. P33/upgrades foram corrigidos em #295–#299 e Agenda/B19 em #300. [Resultados e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+#302 está integrada à `main@175e9dee`; #301 está integrada na baseline local autorizada, com gate READY. P33/upgrades foram corrigidos em #295–#299 e Agenda/B19 em #300. [Resultados e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
 
 O produto permanece em desenvolvimento; disponibilidade remota e clientes legados inexistentes não são pendências locais. F24.6A2 é proposta sem início, não pré-requisito automático de correções localizadas. Certificação ampla e preparação de liberação dependem do alvo escolhido; não há nova fase.
+
+## Bloco 1 — preparação de integração em 21/11/2026
+
+A main remota foi confirmada em `157376d9` (#305), incluindo #303/#304 e sua consolidação documental. O pacote J04/Bloco 1 permanece posterior e local: correções e base do Guia do Usuário preparadas para revisão por PR, com publicação remota das duas migrations/frontend ainda dependente de autorização específica.
+
+Não há nova fase, J06 iniciada ou compromisso de implementar as 12 recomendações. Recovery, tema Sistema e descarte de rascunhos continuam lacunas delimitadas; etapas produtivas, área pecuária e apresentação de indicadores são candidatas dependentes de validação. [Situação por capacidade](./CAPABILITY_MAP.md#j01j05--maturidade-observada-no-pacote-local), [pendências](../review/OPEN_REVIEW_ITEMS.md#bloco-1--pendências-após-correção-local-21112026) e [estado](../context/PROJECT_STATUS.md#estado-atual). Os snapshots anteriores abaixo mantêm seus recortes.
 
 ## Objetivo
 

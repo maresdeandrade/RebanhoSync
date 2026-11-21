@@ -1,0 +1,70 @@
+{
+  "date": "2026-11-21",
+  "scope": "Preflight de PR/integração e plano de publicação; sem deploy, migration remota ou J06",
+  "base": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+  "reviewedHead": "97022bb283f6bf5955a89dd9405f38d640a54d75",
+  "independentReview": {
+    "agent": "/root/review_block1_integration",
+    "readOnly": true,
+    "findings": { "critical": 0, "important": 0, "minor": 0 },
+    "freshEvidence": {
+      "vitest": "95/95 em 12 arquivos, execução direta de Vitest instalado, cache desabilitado",
+      "sql": "29/29, member-invites 19 + block1-security 10, transações locais com rollback",
+      "definitions": "sete funções locais correspondem às migrations; triggers presentes",
+      "links": "425 links/âncoras em 35 documentos, nenhum ausente",
+      "diff": "sem erros de whitespace ou alterações tracked/index pelo revisor"
+    },
+    "limitations": [
+      "Não reexecutou fixtures persistentes de concorrência, Chromium ou baseline descartável; evidência anterior examinada",
+      "Não executou build global, suíte global nem validação remota de escrita",
+      "pnpm exec recusou reconciliar node_modules vinculado; Vitest instalado executado diretamente, sem instalação"
+    ]
+  },
+  "github": {
+    "repository": "maresdeandrade/RebanhoSync",
+    "mainRules": ["deletion", "non_fast_forward"],
+    "requiredCheckRule": false,
+    "checksRequiredByTask": ["Required validation", "Fill PR description"],
+    "workflowsDeploy": false,
+    "repositoryWebhooks": [],
+    "appInventoryLimitation": "Enumeração geral de Apps indisponível; provedores relevantes inspecionados diretamente"
+  },
+  "vercel": {
+    "projectId": "prj_zK4H56qvCjyxWk03p5GH0kmW8EGv",
+    "teamId": "team_oTfqEJrR8Y8CHPF7usbe14Pg",
+    "productionBranch": "main",
+    "createDeployments": "enabled",
+    "ignoredBuildStep": "if [ \"$VERCEL_ENV\" == \"production\" ]; then exit 1; else exit 0; fi",
+    "productionDeployment": "dpl_EPrxswLkPWi6tcuVvryuLahnv1He",
+    "productionSha": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+    "customEnvironments": [],
+    "domain": { "name": "rebanho-sync.vercel.app", "gitBranch": null, "customEnvironmentId": null },
+    "webhooks": [],
+    "proposedGuard": "exit 0",
+    "guardAuthorized": false,
+    "guardExecuted": false
+  },
+  "supabase": {
+    "projectRef": "zqloazqzhwauamcejmuz",
+    "region": "sa-east-1",
+    "status": "ACTIVE_HEALTHY",
+    "postgres": "17.11",
+    "migrationCount": 83,
+    "latestMigration": "20261120090000",
+    "pending": ["20261120231349", "20261121023104"],
+    "previewHasFarmId": false,
+    "deployToProduction": false,
+    "automaticBranching": false,
+    "branches": ["main"],
+    "providerBackups": false,
+    "pitr": false,
+    "restoreDemonstrated": false,
+    "configurationSource": "Consulta somente leitura dos painéis Settings/Integrations e Database/Backups, além de MCP de projeto/migrations/branches e catálogos SQL",
+    "remoteMutations": false
+  },
+  "decisions": {
+    "featurePushAndPr": "Permitidos: preview ignorado e automações Supabase desligadas, revalidar antes do evento",
+    "merge": "Bloqueado até proteção Vercel autorizada e comprovada, CI verde e main atual",
+    "publication": "NO-GO: sem autorização, backup/restore demonstrado ou janela/contas de smoke aprovadas"
+  }
+}

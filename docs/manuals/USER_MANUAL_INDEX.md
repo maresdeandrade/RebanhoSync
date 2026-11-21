@@ -1,171 +1,61 @@
-```md
-# User Manual Index — RebanhoSync
+# Guia do Usuário — índice
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
 
-## Objetivo
-
-Índice do manual do usuário do RebanhoSync.
-
-Use este arquivo como ponto de entrada para localizar o manual correto por tela ou por dúvida de suporte.
-
----
+Use este índice para encontrar uma tarefa ou resolver uma dúvida. Os cinco capítulos do Bloco 1 descrevem a versão validada localmente, **ainda pendente de integração e publicação**. Os demais módulos mantêm seus limites anteriores. O [estado do projeto](../context/PROJECT_STATUS.md#estado-atual) informa a disponibilização comprovada.
 
 ## Comece por aqui
 
-Se você quer entender o uso geral do app:
-
-1. Leia a tela que está usando em `screens/`.
-2. Consulte a FAQ correspondente em `support/`.
-3. Se o problema for técnico, consulte `support/TROUBLESHOOTING.md`.
-
----
-
-## Manuais por tela
-
-| Tela/fluxo | Arquivo |
+| Quero… | Orientação |
 |---|---|
-| Agenda | `docs/manuals/screens/AGENDA.md` |
-| Animais/Rebanho | `docs/manuals/screens/ANIMAIS.md` |
-| Lotes e Pastos | `docs/manuals/screens/LOTES_PASTOS.md` |
-| Compra/Venda/Sociedade | `docs/manuals/screens/COMPRA_VENDA.md` |
-| Registrar | `docs/manuals/screens/REGISTRAR.md` |
-| Sanitário | `docs/manuals/screens/SANITARIO.md` |
+| Criar conta, entrar e iniciar a primeira propriedade | [Primeiro acesso e primeira fazenda](./screens/PRIMEIRO_ACESSO.md) |
+| Identificar, criar, alternar ou editar uma fazenda | [Fazendas e contexto das operações](./screens/FAZENDAS.md) |
+| Convidar pessoas, aceitar convite ou ajustar papel | [Equipe e convites](./screens/EQUIPE_CONVITES.md) |
+| Atualizar nome/telefone, tema e notificações | [Perfil pessoal e preferências](./screens/PERFIL_PREFERENCIAS.md) |
+| Definir unidade, regras de estágio e opções administrativas | [Configurações da fazenda](./screens/CONFIGURACOES_FAZENDA.md) |
 
----
+## Demais módulos
 
-## Suporte e dúvidas frequentes
+Estes capítulos foram preservados; a consolidação do Bloco 1 não representa nova execução de suas jornadas.
 
-| Tema | Arquivo |
+| Tela/fluxo | Manual |
 |---|---|
-| Login, senha, sessão, fazenda | `docs/manuals/support/FAQ_LOGIN.md` |
-| Offline, sincronização e conflitos | `docs/manuals/support/FAQ_SYNC.md` |
-| Agenda, pendências e atrasos | `docs/manuals/support/FAQ_AGENDA.md` |
-| Sanitário, protocolo, evento e carência | `docs/manuals/support/FAQ_SANITARIO.md` |
-| Problemas comuns | `docs/manuals/support/TROUBLESHOOTING.md` |
+| Animais/Rebanho | [Animais](./screens/ANIMAIS.md) |
+| Lotes e Pastos | [Lotes e Pastos](./screens/LOTES_PASTOS.md) |
+| Agenda | [Agenda](./screens/AGENDA.md) |
+| Registrar | [Registrar](./screens/REGISTRAR.md) |
+| Sanitário | [Sanitário](./screens/SANITARIO.md) |
+| Compra/Venda/Sociedade | [Compra e Venda](./screens/COMPRA_VENDA.md) |
 
----
+## Dúvidas frequentes e solução de problemas
 
-## Conceitos essenciais
-
-### Agenda
-
-Agenda é tarefa futura ou pendência.
-
-Exemplos:
-
-- vacina prevista;
-- manejo atrasado;
-- tarefa de hoje;
-- cuidado pós-parto pendente.
-
-Agenda não é histórico.
-
----
-
-### Evento
-
-Evento é fato executado.
-
-Exemplos:
-
-- vacina aplicada;
-- animal movimentado;
-- venda registrada;
-- parto registrado;
-- pesagem registrada.
-
-Histórico vem de eventos.
-
----
-
-### Estado atual
-
-Estado atual mostra a situação consolidada agora.
-
-Exemplos:
-
-- animal ativo;
-- lote atual;
-- pasto atual;
-- status vendido;
-- status morto.
-
-Estado atual não substitui histórico.
-
----
-
-### Protocolo
-
-Protocolo é regra/configuração.
-
-Exemplo:
-
-- calendário sanitário configurado;
-- regra de vacinação;
-- manejo previsto por categoria.
-
-Protocolo não prova execução.
-
----
-
-### Sinal
-
-Sinal é alerta ou leitura auxiliar.
-
-Exemplo:
-
-- pendência atrasada;
-- animal sem lote;
-- estágio desconhecido;
-- carência sanitária ativa;
-- sem carência sanitária vigente nas fontes estruturadas disponíveis.
-
-Sinal não é autorização final.
-
----
-
-## Regras de interpretação segura
-
-Não interpretar automaticamente:
-
-| Informação exibida | Não significa |
+| Dúvida | Orientação |
 |---|---|
-| Agenda vencida | Manejo executado |
-| Protocolo configurado | Protocolo aplicado |
-| Evento sanitário registrado | Liberação comercial |
-| Sem carência sanitária vigente | Apto para venda/abate |
-| Último peso | Peso atual confiável |
-| Custo parcial | Lucro final |
-| Animal em lote | Histórico completo de permanência |
+| Login, senha, sessão, fazenda e convite | [FAQ de acesso](./support/FAQ_LOGIN.md) |
+| Offline, confirmação, alterações pendentes e conflitos | [FAQ de sincronização](./support/FAQ_SYNC.md) |
+| Agenda, pendências e atrasos | [FAQ de Agenda](./support/FAQ_AGENDA.md) |
+| Protocolos, eventos e carência | [FAQ de Sanitário](./support/FAQ_SANITARIO.md) |
+| Erro ao salvar, permissão ou configuração sem efeito esperado | [Solução de problemas](./support/TROUBLESHOOTING.md) |
 
----
+## Conceitos para interpretar as telas
 
-## Ordem prática de uso diário
+| Informação | Interpretação correta |
+|---|---|
+| Agenda / tarefa pendente | Intenção futura; vencer a data não registra execução. |
+| Evento | Fato executado; é fonte de histórico. |
+| Estado atual | Situação consolidada, como lote atual ou status; não é toda a trajetória. |
+| Protocolo | Configuração de regra; não comprova aplicação. |
+| Sinal/alerta | Auxílio à consulta; não é autorização final. |
+| Sem carência sanitária vigente nas fontes disponíveis | Não comprova liberação comercial ou para abate. |
+| Último peso ou custo parcial | Não comprova peso atual confiável ou lucro final. |
+| Salvo neste dispositivo | Pode existir pendência de envio/confirmação remota. |
 
-1. Abrir Home/Central Operacional.
-2. Ver pendências de hoje e atrasadas.
-3. Abrir Agenda quando precisar organizar tarefas.
-4. Usar Registrar para fatos executados.
-5. Consultar Animais para histórico individual.
-6. Consultar Sanitário para protocolos, eventos e sinais sanitários.
-7. Verificar sincronização antes de fechar o app em área com internet.
+## Uso diário e suporte
 
----
+Comece em Home/Hoje, confira a fazenda e as pendências. Use Agenda para intenções e Registrar para fatos executados, conforme seus manuais. Confira mensagens e sincronização antes de encerrar após uma operação crítica com internet disponível.
 
-## Quando acionar suporte
+Procure suporte quando não conseguir entrar, a fazenda esperada não aparecer, dados parecerem ausentes ou misturados, ocorrer duplicidade ou houver conflito/pendência persistente. Preserve os dados locais e informe tela, ação, fazenda, horário e mensagem. Não envie senha ou tokens e não limpe dados por tentativa.
 
-Acione suporte quando:
+## O que ainda não é prometido
 
-- não conseguir entrar;
-- sua fazenda não aparecer;
-- dados importantes sumirem;
-- sync ficar pendente por muito tempo;
-- aparecer duplicidade;
-- evento crítico parecer incorreto;
-- venda/saída/óbito foi registrado errado;
-- há conflito de dados;
-- baixa de estoque parece duplicada ou ausente.
-
-```
+Recuperação de senha pela tela de Login, proteção geral de rascunhos, reação imediata do tema Sistema e novas melhorias de UX permanecem limitações ou candidatas. Não foram aprovados novos canais, campos obrigatórios ou equivalência entre modo Completo e ciclo produtivo completo. Avatar e aparelhos físicos não foram certificados no Bloco 1. Veja os limites de cada capítulo.

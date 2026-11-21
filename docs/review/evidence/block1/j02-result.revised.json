@@ -1,0 +1,424 @@
+{
+  "revision": "2026-11-21",
+  "purpose": "Versão revisada e sanitizada do relatório original; não é reexecução da jornada nem certificação da produção.",
+  "original": {
+    "localRoot": "workspace_original/.work",
+    "file": "j02-result.json",
+    "sha256": "afde54749a0a256415cebac7517676702f3a76445e8bfa1520ab3e9c6e07244b",
+    "bytes": 20246,
+    "archivedInGit": false
+  },
+  "originalReportedStatus": "executed_with_findings_acceptance_partial",
+  "currentAssessment": [
+    {
+      "group": "B1-04",
+      "origins": [
+        "J02-01"
+      ],
+      "title": "Validação da área da fazenda",
+      "status": "corrigido localmente",
+      "acceptance": "CriarFazendaValidation: zero/negativo não chamam RPC; Chromium negativo."
+    },
+    {
+      "group": "B1-05",
+      "origins": [
+        "J02-02"
+      ],
+      "title": "Conclusão coerente do onboarding",
+      "status": "corrigido localmente",
+      "acceptance": "OnboardingInicial.e2e.test.tsx e Chromium MG sem município; navegação já existente preservada."
+    },
+    {
+      "group": "B1-16",
+      "origins": [
+        "J02-04",
+        "J03-U01",
+        "J03-S07",
+        "J05-05"
+      ],
+      "title": "Descarte de rascunhos entre navegação, recarga e fazenda",
+      "status": "candidato; consolidado sem implementação",
+      "acceptance": "Futuro: navegar/voltar/trocar fazenda, manter edição ou descartar explicitamente, sem submissão/duplicação."
+    },
+    {
+      "group": "B1-18",
+      "origins": [
+        "J02-05",
+        "J03-U03",
+        "J04-U01"
+      ],
+      "title": "Terminologia, obrigatoriedade e básico/avançado",
+      "status": "candidato",
+      "acceptance": "Futuro: tarefa de primeiro acesso e entendimento de controles indisponíveis."
+    },
+    {
+      "group": "B1-20",
+      "origins": [
+        "J02-06"
+      ],
+      "title": "Estados vazios e primeiros passos",
+      "status": "candidato",
+      "acceptance": "Futuro: fazenda vazia versus rebanho filtrado."
+    },
+    {
+      "group": "B1-24",
+      "origins": [
+        "J02-03"
+      ],
+      "title": "Etapas produtivas e ciclo completo",
+      "status": "candidato dependente de validação",
+      "acceptance": "Futuro: requisito de produto validado; não confundir Corte, Mista ou modo Completo."
+    }
+  ],
+  "assessmentNote": "Estado das correções locais conforme matriz consolidada do Bloco 1. O conteúdo abaixo preserva o relato original, com redação sanitizada, sem substituir falhas históricas por resultados novos. Integração e publicação devem ser verificadas separadamente no PR306.",
+  "selection": "Campos narrativos, cenários, achados, recomendações e limites selecionados; identidade, sessões, inputs, dados persistidos, payloads e logs completos excluídos.",
+  "content": {
+    "journey": "J02 — Onboarding e Criação da Fazenda",
+    "date": "2026-11-20",
+    "timezone": "America/Sao_Paulo",
+    "completed_at": "2026-11-20T21:43:35.773Z",
+    "baseline": {
+      "workspace": "[caminho local omitido]",
+      "branch": "codex/product-class-contract-v2",
+      "head": "6d63d8b597b18b353863f655662d82b557352061",
+      "main": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+      "confirmation": "Read-only git ls-remote origin refs/heads/main; git diff main..HEAD empty for src, supabase, package.json and pnpm-lock.yaml.",
+      "frontend": "http://127.0.0.1:4173/",
+      "backend": "http://127.0.0.1:54321/",
+      "preexisting_tracked_changes": [
+        "docs/context/PROJECT_STATUS.md",
+        "docs/review/ACTIVE_PHASE_PLAN.md",
+        "docs/review/CURRENT_PHASE_HANDOFF.md"
+      ],
+      "preexisting_untracked": [
+        ".work/j01-result.json",
+        ".work/playwright.j01.config.ts",
+        ".work/scripts/compare-migration-paths.mjs",
+        ".work/scripts/j01-auth.spec.ts"
+      ]
+    },
+    "observations": {
+      "preflight_completed": true,
+      "j01_account_exists_in_local_auth": true,
+      "target_browser_authenticated": true,
+      "current_page": "/home",
+      "farm_horizonte_created": true,
+      "functional_code_modified": false,
+      "canonical_docs_modified_by_j02": false,
+      "migrations_or_backend_reconciliation_repeated": false,
+      "remote_mutation": false
+    },
+    "scenario_count": {
+      "unit": "17 operational checks; desktop/mobile variants grouped by behavior; technical authentication fixture excluded",
+      "executed": 17,
+      "executed_with_unmet_criterion": 1,
+      "not_executed": 0
+    },
+    "scenarios": [
+      {
+        "id": "J02-S01",
+        "name": "Descoberta sem fazenda",
+        "status": "executed",
+        "observed": "Zero farms; two Criar nova fazenda actions visible; existing identity retained",
+        "evidence": [
+          ".work/evidence/j02/02-sem-fazenda-desktop.png"
+        ]
+      },
+      {
+        "id": "J02-S02",
+        "name": "Tela que exige fazenda",
+        "status": "executed",
+        "observed": "Authenticated /home redirected to /select-fazenda before creation",
+        "evidence": [
+          ".work/evidence/j02/02-sem-fazenda-desktop.png"
+        ]
+      },
+      {
+        "id": "J02-S03",
+        "name": "Campos obrigatórios",
+        "status": "executed",
+        "observed": "Empty submission rejected with Nome e obrigatorio on desktop and mobile",
+        "evidence": [
+          ".work/evidence/j02/04-campos-obrigatorios.png",
+          ".work/evidence/j02/09-obrigatorio-mobile.png"
+        ]
+      },
+      {
+        "id": "J02-S04",
+        "name": "Área negativa e recuperação",
+        "status": "executed",
+        "observed": "-10 rejected remotely; technical English constraint error shown; form remains editable; corrected input later succeeds",
+        "evidence": [
+          ".work/evidence/j02/06-resultado-tentativa-invalida.png",
+          ".work/evidence/j02/07-validacao-mobile.png"
+        ]
+      },
+      {
+        "id": "J02-S05",
+        "name": "Interrupção antes de enviar e retorno",
+        "status": "executed",
+        "observed": "Filled name/100ha/MG/Corte then browser back+forward; inputs reset without warning; no farm created by interruption",
+        "evidence": [
+          ".work/evidence/j02/08-retorno-formulario-mobile.png"
+        ]
+      },
+      {
+        "id": "J02-S06",
+        "name": "Campos, máscara, unidades e layout",
+        "status": "executed",
+        "observed": "Area labeled ha, numeric step 0.01; alphabetic CEP removed; only name required; long form uses vertical scroll on mobile",
+        "evidence": [
+          ".work/evidence/j02/03-formulario-desktop.png",
+          ".work/evidence/j02/10-dados-validos-mobile.png"
+        ]
+      },
+      {
+        "id": "J02-S07",
+        "name": "Criação válida",
+        "status": "executed",
+        "observed": "Submitted via mobile UI; Criando fazenda... observed; RPC returned 200 and farm ID; proceeded to onboarding",
+        "evidence": [
+          ".work/evidence/j02/10-dados-validos-mobile.png",
+          ".work/evidence/j02/11-onboarding-criado-mobile.png"
+        ]
+      },
+      {
+        "id": "J02-S08",
+        "name": "Sucesso e contexto inicial",
+        "status": "executed",
+        "observed": "Fazenda Horizonte active; owner; onboarding 1/6 and next step Pastos; farm step simultaneously completed and location unrevised",
+        "evidence": [
+          ".work/evidence/j02/12-onboarding-desktop.png",
+          ".work/evidence/j02/13-etapa-fazenda-desktop.png"
+        ]
+      },
+      {
+        "id": "J02-S09",
+        "name": "Disponibilidade do perfil ciclo completo",
+        "status": "executed_with_unmet_criterion",
+        "observed": "No explicit lifecycle production-cycle category in create/edit/settings inspected; persisted Corte only",
+        "evidence": [
+          ".work/evidence/j02/16-configuracoes-perfil.png",
+          ".work/evidence/j02/17-cadastro-persistido-desktop.png"
+        ]
+      },
+      {
+        "id": "J02-S10",
+        "name": "Home e próximos passos",
+        "status": "executed",
+        "observed": "Home active farm correct; operational empty states; first steps exist in collapsed section below daily panels; links include animal/lot/pasture/registration",
+        "evidence": [
+          ".work/evidence/j02/14-home-inicial-desktop.png",
+          ".work/evidence/j02/15-home-primeiros-passos.png",
+          ".work/evidence/j02/30-home-mobile-viewport.png"
+        ]
+      },
+      {
+        "id": "J02-S11",
+        "name": "Animais vazio",
+        "status": "executed",
+        "observed": "Opened desktop and mobile; zero animals and Novo animal/Importar; empty message suggests filters rather than first registration",
+        "evidence": [
+          ".work/evidence/j02/18-animais-vazio-desktop.png",
+          ".work/evidence/j02/28-animais-vazio-mobile.png"
+        ]
+      },
+      {
+        "id": "J02-S12",
+        "name": "Lotes vazio",
+        "status": "executed",
+        "observed": "Opened desktop and mobile; zero lots, explanatory empty state and Criar primeiro lote; no registration executed",
+        "evidence": [
+          ".work/evidence/j02/19-lotes-vazio-desktop.png",
+          ".work/evidence/j02/26-lotes-vazio-mobile.png"
+        ]
+      },
+      {
+        "id": "J02-S13",
+        "name": "Pastos vazio",
+        "status": "executed",
+        "observed": "Opened desktop and mobile; zero pastures, explanatory empty state and Cadastrar primeiro pasto; no registration executed",
+        "evidence": [
+          ".work/evidence/j02/20-pastos-vazio-desktop.png",
+          ".work/evidence/j02/27-pastos-vazio-mobile.png"
+        ]
+      },
+      {
+        "id": "J02-S14",
+        "name": "Atalho Registrar",
+        "status": "executed",
+        "observed": "Opened desktop Registrar and mobile Manejo; context wizard displayed; no operation advanced or saved",
+        "evidence": [
+          ".work/evidence/j02/21-registrar-sem-execucao-desktop.png",
+          ".work/evidence/j02/25-menu-mais-mobile.png",
+          ".work/evidence/j02/29-registrar-mobile.png"
+        ]
+      },
+      {
+        "id": "J02-S15",
+        "name": "Recarga",
+        "status": "executed",
+        "observed": "Home reload retained active farm and existing account",
+        "evidence": [
+          ".work/evidence/j02/23-home-pos-recarga-desktop.png"
+        ]
+      },
+      {
+        "id": "J02-S16",
+        "name": "Reabertura da aplicação",
+        "status": "executed",
+        "observed": "New tab in persistent Chromium opened root and reached Home with same identity/farm; previous app tab then closed; browser process not restarted",
+        "evidence": [
+          ".work/evidence/j02/31-reabertura-desktop.png"
+        ]
+      },
+      {
+        "id": "J02-S17",
+        "name": "Persistência e ausência de duplicidade",
+        "status": "executed",
+        "observed": "Read-only DB and edit UI confirm exactly one Horizonte, one original-user membership owner, active farm saved, MG/100ha/Corte, zero animals/lots/pastures/events",
+        "evidence": [
+          ".work/evidence/j02/17-cadastro-persistido-desktop.png",
+          ".work/evidence/j02/31-reabertura-desktop.png"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "id": "J02-01",
+        "type": "confirmed_defect",
+        "severity": "MEDIUM",
+        "screen": "/criar-fazenda",
+        "preconditions": "Existing authenticated J01 user with zero farms",
+        "steps": [
+          "Enter Fazenda Horizonte and area -10",
+          "Submit creation"
+        ],
+        "expected": "Reject invalid area beside field with understandable Portuguese message; persist no farm",
+        "observed": "Request reaches create_fazenda; DB rejects with new row for relation fazendas violates check constraint fazendas_area_total_ha_check, shown raw in UI. No farm created.",
+        "cause": "CriarFazenda.tsx registers area with valueAsNumber only, without positive-value validation; createError.message is thrown and displayed directly.",
+        "source": [
+          "src/pages/CriarFazenda.tsx:108",
+          "src/pages/CriarFazenda.tsx:226"
+        ],
+        "evidence": [
+          ".work/evidence/j02/06-resultado-tentativa-invalida.png",
+          ".work/evidence/j02/07-validacao-mobile.png"
+        ],
+        "impact": "User receives database internals rather than actionable area correction",
+        "recommendation": "Validate positive area when provided; map constraint/backend failures into field guidance; preserve database constraint and contract."
+      },
+      {
+        "id": "J02-02",
+        "type": "confirmed_defect",
+        "severity": "MEDIUM",
+        "screen": "/onboarding-inicial",
+        "preconditions": "Farm MG/Corte created with optional municipality left blank",
+        "steps": [
+          "Create farm with requested available fields",
+          "Select Fazenda step in onboarding"
+        ],
+        "expected": "Completion badge and success criteria agree with current location state",
+        "observed": "Step says OK/Etapa concluida and contributes 1/6 while stating Localizacao nao revisada and requiring Nome e localizacao revisados.",
+        "cause": "OnboardingInicial.tsx:124 completes with tipo_producao OR municipio OR estado; location label at lines 110-113 requires municipio AND estado.",
+        "source": [
+          "src/pages/OnboardingInicial.tsx:110",
+          "src/pages/OnboardingInicial.tsx:124"
+        ],
+        "evidence": [
+          ".work/evidence/j02/12-onboarding-desktop.png",
+          ".work/evidence/j02/13-etapa-fazenda-desktop.png"
+        ],
+        "impact": "First-time user is told a step is complete while same screen says required review is missing",
+        "recommendation": "Align completion rule, displayed location and stated criteria; decide explicitly whether state alone suffices, without silently making optional fields mandatory."
+      },
+      {
+        "id": "J02-03",
+        "type": "functional_gap_in_inspected_flow",
+        "severity": "MEDIUM",
+        "screen": "/criar-fazenda -> /configuracoes -> /editar-fazenda",
+        "preconditions": "Requested full-cycle beef farm",
+        "steps": [
+          "Inspect production options on create",
+          "Inspect settings and edit without saving changes"
+        ],
+        "expected": "Represent requested ciclo completo if product supports it",
+        "observed": "Available production taxonomy is Corte/Leite/Mista; no explicit ciclo completo selection found in inspected farm configuration.",
+        "evidence": [
+          ".work/evidence/j02/03-formulario-desktop.png",
+          ".work/evidence/j02/16-configuracoes-perfil.png",
+          ".work/evidence/j02/17-cadastro-persistido-desktop.png"
+        ],
+        "impact": "Corte was persisted; full-cycle profile criterion is not demonstrated",
+        "recommendation": "Clarify whether ciclo completo is a supported farm attribute before proposing data-contract changes; do not equate Mista or Corte with explicit full cycle."
+      },
+      {
+        "id": "J02-04",
+        "type": "optional_ux_improvement",
+        "severity": "LOW",
+        "screen": "/criar-fazenda",
+        "preconditions": "Form partially filled, not submitted",
+        "steps": [
+          "Fill name, area, state and production",
+          "Browser back then forward"
+        ],
+        "expected": "Help user anticipate or recover discarded input",
+        "observed": "Inputs reset without warning or recoverable draft.",
+        "evidence": [
+          ".work/evidence/j02/08-retorno-formulario-mobile.png"
+        ],
+        "impact": "Rework after accidental navigation",
+        "recommendation": "Consider unsaved-change warning or temporary draft; never automatically submit or duplicate farm."
+      },
+      {
+        "id": "J02-05",
+        "type": "optional_ux_improvement",
+        "severity": "LOW",
+        "screen": "/criar-fazenda and /home",
+        "preconditions": "First-time user without knowledge of internal terms",
+        "steps": [
+          "Open farm form",
+          "Open Home after creation",
+          "Expand Acompanhamento do rebanho e primeiros passos"
+        ],
+        "expected": "Required information and next action easy to discover",
+        "observed": "Provisionamento terminology; required/optional fields not marked; Home first steps below operational panels and collapsed by default.",
+        "evidence": [
+          ".work/evidence/j02/03-formulario-desktop.png",
+          ".work/evidence/j02/15-home-primeiros-passos.png",
+          ".work/evidence/j02/30-home-mobile-viewport.png"
+        ],
+        "impact": "Extra scanning and failed submission to discover mandatory fields; first-action guidance competes with empty daily metrics",
+        "recommendation": "Mark required/optional fields, use Criar fazenda wording, and surface first steps prominently while farm is empty."
+      },
+      {
+        "id": "J02-06",
+        "type": "optional_ux_improvement",
+        "severity": "LOW",
+        "screen": "/animais",
+        "preconditions": "Brand-new farm with zero animals",
+        "steps": [
+          "Open Animais/Rebanho"
+        ],
+        "expected": "Explain genuinely empty farm and how to start",
+        "observed": "Nenhum animal ativo neste recorte suggests filters; creation action exists separately.",
+        "evidence": [
+          ".work/evidence/j02/18-animais-vazio-desktop.png",
+          ".work/evidence/j02/28-animais-vazio-mobile.png"
+        ],
+        "impact": "May suggest hidden animals instead of an empty new herd",
+        "recommendation": "When entire farm has no animals, present a first-registration state; retain filter-empty message for existing herds."
+      }
+    ],
+    "confirmed_product_defects": 2,
+    "ux_improvement_opportunities": 3,
+    "limitations": [
+      "Ciclo completo not represented explicitly in inspected configuration; Corte persisted and not treated as equivalent.",
+      "No full browser-process restart, device hardware or virtual keyboard; reopening used a new tab in same persistent profile.",
+      "No induced network interruption after server commit, concurrent farm creation, retry/replay or offline farm creation; no claim of universal duplicate prevention.",
+      "CEP alphabetic sanitization observed, but valid numeric CEP and its persistence were not certified.",
+      "No correction, J01 repetition, J03 execution, global suite, lint/build, migration execution or canonical-document update."
+    ],
+    "functional_gaps": 1
+  }
+}

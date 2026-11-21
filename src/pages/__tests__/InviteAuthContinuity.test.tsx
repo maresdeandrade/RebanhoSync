@@ -37,6 +37,7 @@ const invitePath = `/invites/${token}`;
 const query = `?${new URLSearchParams({ redirect: invitePath })}`;
 const session = { user: { id: "fixture-user" } };
 const preview = {
+  fazenda_id: "fixture-farm",
   fazenda_nome: "Fazenda de teste",
   role: "manager",
   inviter_nome: "Maria",
@@ -142,7 +143,7 @@ describe("continuidade de convites na autenticacao", () => {
     vi.mocked(supabase.rpc).mockImplementation(
       async (name) =>
         ({
-          data: name === "get_invite_preview" ? preview : "fixture-farm",
+          data: name === "get_invite_preview" ? [preview] : "fixture-farm",
           error: null,
         }) as never,
     );
@@ -322,11 +323,11 @@ describe("continuidade de convites na autenticacao", () => {
     "preserva aviso de convite %s sem aceitar",
     async (status) => {
       vi.mocked(supabase.rpc).mockResolvedValue({
-        data: { ...preview, status, is_valid: false },
+        data: [{ ...preview, status, is_valid: false }],
         error: null,
       } as never);
       render(<Harness entry={invitePath} authenticated />);
-      await screen.findByText("Convite expirado ou ja utilizado");
+      await screen.findByText(status === "accepted" ? "Convite ja utilizado" : "Convite expirado");
       expect(
         screen.queryByRole("button", { name: "Aceitar convite" }),
       ).not.toBeInTheDocument();
@@ -350,7 +351,7 @@ describe("continuidade de convites na autenticacao", () => {
     vi.mocked(supabase.rpc).mockImplementation(
       async (name) =>
         ({
-          data: name === "get_invite_preview" ? preview : null,
+          data: name === "get_invite_preview" ? [preview] : null,
           error: name === "accept_invite" ? { message } : null,
         }) as never,
     );

@@ -4,17 +4,22 @@ import Dexie from "dexie";
 import { describe, expect, it } from "vitest";
 import { LOCAL_OWNERSHIP_KEY, OfflineDB } from "../db";
 
-describe("F24.5E1 — additive v32 to v33 telemetry checkpoint", () => {
+describe("F24.5E1 — v32 to current schema preserves telemetry checkpoint", () => {
   it.each(["original-owner", null])("preserves all functional records and owner %s without fabricating ACK", async owner => {
     const name = `RebanhoSync-F24-5E1-${crypto.randomUUID()}`;
     const upgraded = new OfflineDB(name);
-    // v33/v34/v35 add stores only; none belongs in the v32 fixture.
+    // Stores added in v33/v34/v35/v37 do not belong in the v32 fixture.
     const addedStores = ["telemetry_flush_cursors", "catalog_sanitario_produto_carencia_fontes_v2",
       "ops_sanitario_participacoes", "ops_sanitario_participacao_operacoes", "ops_sanitario_agenda_resultados",
-      "ops_sanitario_continuidade_solicitacoes", "local_sanitario_participacoes"];
+      "ops_sanitario_continuidade_solicitacoes", "local_sanitario_participacoes",
+      "catalog_sanitario_produto_class_links_v2"];
     const stores = Object.fromEntries(upgraded.tables
       .filter(table => !addedStores.includes(table.name))
       .map(table => [table.name, [table.schema.primKey.src, ...table.schema.indexes.map(index => index.src)].join(", ")]));
+    // v36 removed these indices; restore their historical v32 definitions.
+    stores.catalog_sanitario_product_classes_v2 += ", automation_status";
+    stores.catalog_sanitario_product_class_groups_v2 += ", automation_status";
+    stores.catalog_sanitario_protocolo_itens_versions_v2 += ", allows_agenda_auto";
     const legacy = new Dexie(name);
     legacy.version(32).stores(stores);
     const time = "2026-10-07T10:00:00.000Z";
@@ -43,7 +48,7 @@ describe("F24.5E1 — additive v32 to v33 telemetry checkpoint", () => {
       const snapshots = Object.fromEntries(await Promise.all(Object.keys(fixtures).map(async table => [table, await legacy.table(table).toArray()])));
       legacy.close();
       await upgraded.open();
-      expect(upgraded.verno).toBe(36);
+      expect(upgraded.verno).toBe(37);
       expect(upgraded.tables.map(table => table.name).sort()).toEqual([...Object.keys(stores), ...addedStores].sort());
       for (const table of addedStores) expect(await upgraded.table(table).count()).toBe(0);
       expect(await upgraded.catalog_sanitario_produto_carencia_fontes_v2.count()).toBe(0);

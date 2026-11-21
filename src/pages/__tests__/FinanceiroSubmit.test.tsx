@@ -16,6 +16,7 @@ import { createGesture } from "@/lib/offline/ops";
 import Financeiro from "@/pages/Financeiro";
 
 vi.mock("@/hooks/useAuth");
+vi.mock("@/lib/supabase", () => ({ supabase: {} }));
 vi.mock("dexie-react-hooks", () => ({ useLiveQuery: vi.fn() }));
 vi.mock("@/lib/offline/ops", () => ({ createGesture: vi.fn() }));
 vi.mock("@/lib/offline/db", () => ({
@@ -129,6 +130,7 @@ describe("Financeiro submit lock", () => {
     mockedCreateGesture.mockReset();
     vi.mocked(useAuth).mockReturnValue({
       activeFarmId: "farm-1",
+      role: "owner",
     } as ReturnType<typeof useAuth>);
     vi.mocked(useLiveQuery).mockReturnValue(financeData);
   });
@@ -138,6 +140,13 @@ describe("Financeiro submit lock", () => {
     expect(screen.getByText(/cobertura insuficiente/i)).toBeVisible();
     expect(document.body).toHaveTextContent("não comprovam contabilidade completa nem lucro");
     expect(document.body).not.toHaveTextContent(/INSUFFICIENT_COVERAGE|OBSERVED_SCOPE_ONLY|completeAccounting|NOT_DEMONSTRATED|Coverage/);
+  });
+
+  it("cowboy consulta sem ações de escrita financeira", () => {
+    vi.mocked(useAuth).mockReturnValue({activeFarmId:"farm-1",role:"cowboy"} as ReturnType<typeof useAuth>);
+    renderFinanceiro();
+    expect(screen.queryByRole("button", {name:/Novo lançamento/i})).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", {name:/Nova categoria/i})).not.toBeInTheDocument();
   });
 
   it.each([

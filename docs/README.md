@@ -7,7 +7,7 @@
 - **Fase 24 — Release Hardening / Scale Readiness**; F24.5 integrada e F24.6 ativa.
 - F24.6A1 integrada pelo PR #200; certificação restrita ao envelope reconnect 1k. Não implica capacidade geral de escala.
 - F24.6A2 é proposta de inventário estático; escopo e critérios devem ser formalizados antes do início.
-- Em 18/11/2026, `main@175e9dee` inclui #302: Protocolos da Fazenda, avaliações factuais e controle estratégico individual. #301 está integrada na baseline local autorizada, com gate READY.
+- A main remota foi confirmada em `157376d9` (#305) em 21/11/2026; #303/#304 e sua consolidação documental estão integradas. J04/Bloco 1 permanecem locais, preparados para revisão; as duas migrations não estão no inventário remoto consultado.
 - Desenvolvimento local, integração e disponibilização remota são distintos. O produto não tem produção operacional declarada; ausência de deploy não reabre entregas locais encerradas.
 
 Hierarquia factual: código e migrations ativas; depois [estado do projeto](./context/PROJECT_STATUS.md); depois documentos normativos e derivados. Este índice e os READMEs não substituem essas fontes.
@@ -40,6 +40,7 @@ Fontes de continuidade:
 
 ## Produto e UX
 
+- [Guia do Usuário — índice único](./manuals/USER_MANUAL_INDEX.md), com disponibilidade local explícita para os cinco capítulos J01–J05.
 - [Visão de produto](./product/PRODUCT_VISION.md)
 - [Escopo MVP](./product/MVP_SCOPE.md)
 - [Mapa de capacidades](./product/CAPABILITY_MAP.md)
@@ -50,6 +51,7 @@ Fontes de continuidade:
 
 ## Histórico e evidências
 
+- [Inventário documental e evidência da integração do Bloco 1](./review/evidence/BLOCK1_INTEGRATION_20261121.json)
 - `docs/review/evidence/`: comprovações técnicas e curatoriais.
 - `docs/archive/`: documentos históricos fora do uso operacional.
 

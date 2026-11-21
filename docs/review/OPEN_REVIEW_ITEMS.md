@@ -1,16 +1,28 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-11-18
+Atualizado em: 2026-11-21
 
 ## Pendências vigentes — 18/11/2026
 
-- **Integração:** #301 integrada, gate READY; perdas e indicadores coletivos corrigidos e validados. Não há correção funcional pendente demonstrada nesse recorte. [CI e limites](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+- **Integração:** #301 integrada, gate READY; perdas e indicadores coletivos corrigidos e validados. Não há correção funcional pendente demonstrada nesse recorte. [CI e limites](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
 - **Curadoria contextual:** manter somente exceções C02/C03 necessárias ao produto/regra/finalidade escolhidos. Cadastro/curadoria documental dos 39 encerrados; não repetir importação.
 - **Evoluções/limites:** kill real, dispositivos físicos, escopo mobile, performance ampliada e homologação de jornadas dependem de alvo e necessidade concretos; ausência de comprovação não é ausência de implementação nem P0 automático.
 - **Superadas como implementação pendente:** P33/fixtures de #294, caller neonatal #274, colaboração/fechamento/continuidade #268, UX #290 e funcionalidades #302. Junho continua contextual por decisão de produto.
 - **Fora do backlog funcional obrigatório:** deploy/migrations remotos e compatibilidade com versões antigas inexistentes. Nenhum defeito P0 ativo novo foi demonstrado no levantamento; isso não certifica segurança universal.
 
 Os snapshots e matrizes abaixo mantêm os recortes e prioridades históricas; prevalece esta consolidação quando uma integração posterior resolveu o item.
+
+## Bloco 1 — pendências após correção local, 21/11/2026
+
+O pacote J04/Bloco 1 está preparado para revisão de integração sobre `main@157376d9`. Não há correção prioritária local aberta demonstrada no escopo validado; isso não certifica o produto inteiro.
+
+| Item | Situação e próxima ação delimitada |
+|---|---|
+| Integração/publicação | Revisar commits/PR e, sob autorização própria, publicar as duas migrations em ordem e o frontend compatível. Inventário remoto somente leitura ainda não contém J04/Bloco 1. |
+| Recovery, tema Sistema e rascunhos | Lacunas observadas permanecem: recovery ausente; tema exige recarga/reaplicação; não há proteção geral de descarte. Não foram implementados por documentação. |
+| Recomendações e cobertura futura | As 12 recomendações são candidatas; avatar, aparelho físico e efeitos operacionais dos módulos futuros não foram certificados. Não há nova fase ou J06 iniciada. |
+
+[Estado canônico](../context/PROJECT_STATUS.md#estado-atual) e [evidência da integração](./evidence/BLOCK1_INTEGRATION_20261121.json). A matriz detalhada continua nos artefatos `.work/block1/`, sem virar backlog obrigatório integral.
 
 ## Objetivo
 

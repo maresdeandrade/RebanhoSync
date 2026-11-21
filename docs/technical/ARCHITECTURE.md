@@ -1,6 +1,14 @@
 # Arquitetura — RebanhoSync
 
-Atualizado em: 2026-11-18
+Atualizado em: 2026-11-21
+
+## Fluxos administrativos diretos — J04/Bloco 1 local
+
+Auth e contexto continuam em `useAuth`; Equipe usa consultas separadas de vínculos/perfis. Aceitação e administração de membros usam RPCs que conferem identidade/autoridade no servidor e serializam pela linha da fazenda, preservando replay, reingresso explícito e último owner.
+
+Perfil e preferências pessoais usam gravação direta autenticada em `user_profiles`/`user_settings`; Perfil cria a linha ausente com upsert e exige confirmação retornada. Editar Fazenda e Configurações usam `updateFarmFromSnapshot`: ID + `updated_at` condicionam o UPDATE e a confirmação de uma linha evita falso sucesso ou sobrescrita desatualizada. A guarda de flags é trigger no PostgreSQL, distinta da restrição visual; RLS owner/manager continua protegendo as demais escritas.
+
+Esses fluxos administrativos existentes não foram convertidos em gestures nem receberam fila offline paralela. Falha remota não autoriza mensagem de enqueue/sucesso local. Os contratos operacionais pela fila compartilhada permanecem. [Contrato específico](./SUPABASE_RLS.md#regras-de-rls), [evidência](../review/evidence/BLOCK1_INTEGRATION_20261121.json) e [disponibilidade](../context/PROJECT_STATUS.md#estado-atual).
 
 ## Visão geral
 
@@ -24,7 +32,7 @@ UI
 
 O contrato único V3 inclui colaboração, fechamento gerencial e continuidade (#268). #302 integra configuração de protocolos/monitoramento, avaliação factual e projeção estratégica; configuração, fato e projeção permanecem separados. Não existe materialização de junho.
 
-#301 está integrada na baseline local autorizada: o vínculo técnico V2 do estoque é revalidado no domínio e na Edge; previsão e indicadores leem as fontes existentes, incluindo participantes factuais dos Eventos coletivos. Não há novo motor de estoque ou fila. `sanitario-reconcile` foi aposentada como Edge no código (#293), mantendo recuperação e pull canônicos. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+#301 está integrada na baseline local autorizada: o vínculo técnico V2 do estoque é revalidado no domínio e na Edge; previsão e indicadores leem as fontes existentes, incluindo participantes factuais dos Eventos coletivos. Não há novo motor de estoque ou fila. `sanitario-reconcile` foi aposentada como Edge no código (#293), mantendo recuperação e pull canônicos. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
 
 ## Invariantes
 
@@ -85,7 +93,7 @@ Otimizam leitura atual. Não substituem evento, evidência documental ou fonte t
 - gate sanitário remoto: desligado;
 - feature flag local: `false`;
 - recertificação completa, importação real e rollout: não autorizados;
-- produção: não provisionada.
+- publicação técnica existente conforme o [estado canônico](../context/PROJECT_STATUS.md); produção operacional/homologação ampla não declaradas. Este quadro não substitui inventário remoto atual.
 
 Implementação e integração não equivalem a ativação operacional. A fase atual é F24, com F24.6 ativa e F24.6A1 integrada somente no envelope certificado. O [estado do projeto](../context/PROJECT_STATUS.md) e o [plano ativo](../review/ACTIVE_PHASE_PLAN.md) registram limites e próxima proposta.
 
