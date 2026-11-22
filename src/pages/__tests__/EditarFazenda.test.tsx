@@ -3,7 +3,7 @@ import "@testing-library/jest-dom";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 
 import EditarFazenda from "@/pages/EditarFazenda";
 
@@ -37,10 +37,12 @@ const names = [
 ] as const;
 
 async function renderPage() {
+  const router = createMemoryRouter(
+    [{ path: '*', element: <EditarFazenda /> }],
+    { initialEntries: ['/editar-fazenda'] },
+  );
   const result = render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <EditarFazenda />
-    </MemoryRouter>,
+    <RouterProvider router={router} />,
   );
   await screen.findByRole("button", { name: "Salvar fazenda" });
   return result;
@@ -173,10 +175,12 @@ describe("EditarFazenda — acessibilidade dos switches (UX09B)", () => {
 
   it.each(["cowboy", null] as const)("nao exibe switches para perfil sem permissao: %s", async (role) => {
     mocks.role = role;
+    const router = createMemoryRouter(
+      [{ path: '*', element: <EditarFazenda /> }],
+      { initialEntries: ['/editar-fazenda'] },
+    );
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <EditarFazenda />
-      </MemoryRouter>,
+      <RouterProvider router={router} />,
     );
     expect(await screen.findByText("Voce nao tem permissao para editar esta fazenda.")).toBeVisible();
     expect(screen.queryAllByRole("switch")).toHaveLength(0);

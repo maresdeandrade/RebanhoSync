@@ -29,6 +29,7 @@ interface FarmLifecycleSettingsPanelProps {
   weightUnit: FarmWeightUnit;
   isSaving?: boolean;
   onSave: (config: FarmLifecycleConfig) => Promise<void> | void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 type LifecycleFormState = {
@@ -112,6 +113,7 @@ export function FarmLifecycleSettingsPanel({
   weightUnit,
   isSaving = false,
   onSave,
+  onDirtyChange,
 }: FarmLifecycleSettingsPanelProps) {
   const [form, setForm] = useState<LifecycleFormState>(() =>
     toFormState(config, weightUnit),
@@ -120,6 +122,12 @@ export function FarmLifecycleSettingsPanel({
   useEffect(() => {
     setForm(toFormState(config, weightUnit));
   }, [config, weightUnit]);
+
+  useEffect(() => {
+    onDirtyChange?.(
+      JSON.stringify(form) !== JSON.stringify(toFormState(config, weightUnit)),
+    );
+  }, [config, form, onDirtyChange, weightUnit]);
 
   const handleSave = async () => {
     await onSave({

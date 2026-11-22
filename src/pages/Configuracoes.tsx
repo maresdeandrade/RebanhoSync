@@ -31,6 +31,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { UnsavedChangesDialog } from "@/components/forms/UnsavedChangesDialog";
 
 const BASIS_LABEL = {
   idade: "Idade",
@@ -43,6 +45,12 @@ const TRANSITION_LABEL = {
   automatico: "Automatico",
 } as const;
 
+const ROLE_LABEL = {
+  owner: "Proprietario",
+  manager: "Gerente",
+  cowboy: "Operacao",
+} as const;
+
 export default function Configuracoes() {
   const { activeFarmId, role, refreshSettings, farmMeasurementConfig } =
     useAuth();
@@ -52,6 +60,7 @@ export default function Configuracoes() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingLifecycle, setIsSavingLifecycle] = useState(false);
   const [isSavingMeasurement, setIsSavingMeasurement] = useState(false);
+  const [lifecycleDirty, setLifecycleDirty] = useState(false);
   const [pendingWeightUnit, setPendingWeightUnit] = useState<FarmWeightUnit>(
     farmMeasurementConfig.weight_unit,
   );
@@ -108,6 +117,10 @@ export default function Configuracoes() {
     setPendingWeightUnit(measurementConfig.weight_unit);
   }, [measurementConfig.weight_unit]);
 
+  const isSaving = isSavingLifecycle || isSavingMeasurement;
+  const isDirty = lifecycleDirty || pendingWeightUnit !== measurementConfig.weight_unit;
+  const blocker = useUnsavedChangesGuard({ isDirty, isSaving });
+
   const handleSaveLifecycle = async (config: typeof lifecycleConfig) => {
     if (!activeFarmId) {
       showError("Selecione uma fazenda ativa.");
@@ -121,6 +134,7 @@ export default function Configuracoes() {
 
       setFarmMetadata(metadata);
       setFarmSnapshot({farmId: activeFarmId, updatedAt: saved.updated_at});
+      setLifecycleDirty(false);
       await refreshSettings();
       showSuccess("Regras de estagio atualizadas.");
     } catch (error) {
@@ -146,6 +160,7 @@ export default function Configuracoes() {
 
       setFarmMetadata(metadata);
       setFarmSnapshot({farmId: activeFarmId, updatedAt: saved.updated_at});
+      setPendingWeightUnit(pendingWeightUnit);
       await refreshSettings();
       showSuccess("Unidade de peso atualizada.");
     } catch (error) {
@@ -179,6 +194,7 @@ export default function Configuracoes() {
         variant="plain"
         eyebrow="Configuracoes"
         title="Regras e parametros operacionais"
+        description="Estas configurações pertencem à fazenda ativa e são compartilhadas conforme as permissões do papel vigente; não são preferências pessoais."
         meta={
           <>
             <StatusBadge tone="neutral">
@@ -186,6 +202,9 @@ export default function Configuracoes() {
             </StatusBadge>
             <StatusBadge tone={canManageFarmSettings ? "info" : "warning"}>
               {canManageFarmSettings ? "Edicao liberada" : "Somente leitura"}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              Papel: {ROLE_LABEL[role as keyof typeof ROLE_LABEL] ?? "não carregado"}
             </StatusBadge>
             <StatusBadge tone="neutral">
               Base: {BASIS_LABEL[lifecycleConfig.stage_classification_basis]}
@@ -312,6 +331,7 @@ export default function Configuracoes() {
         weightUnit={measurementConfig.weight_unit}
         isSaving={isSavingLifecycle}
         onSave={handleSaveLifecycle}
+        onDirtyChange={setLifecycleDirty}
       />
 
       <SyncHealthPanel />
@@ -335,7 +355,10 @@ export default function Configuracoes() {
           </CardContent>
         </Card>
       ) : null}
+      <UnsavedChangesDialog
+        blocker={blocker}
+        description="As configurações da fazenda ainda têm alterações não salvas. Se sair agora, esse preenchimento será perdido."
+      />
     </div>
   );
 }
-

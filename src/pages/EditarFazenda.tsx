@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
 
@@ -30,6 +30,8 @@ import {
 import { supabase } from "@/lib/supabase";
 import { updateFarmFromSnapshot, type FarmWriteSnapshot } from "@/lib/farms/updateFarm";
 import { authOperationError } from "@/lib/auth/errorMessage";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { UnsavedChangesDialog } from "@/components/forms/UnsavedChangesDialog";
 
 type FarmFormState = {
   nome: string;
@@ -101,9 +103,28 @@ export default function EditarFazenda() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const baseline = useRef<{
+    farmId: string;
+    form: FarmFormState;
+    essentialModeEnabled: boolean;
+    strictRulesEnabled: boolean;
+    strictAntiTeleportEnabled: boolean;
+  } | null>(null);
 
   const canManageRolloutFlags = role === "owner";
   const canEditFarm = role === "owner" || role === "manager";
+  const isDirty = Boolean(
+    baseline.current &&
+      JSON.stringify(baseline.current) !==
+        JSON.stringify({
+          farmId: activeFarmId,
+          form,
+          essentialModeEnabled,
+          strictRulesEnabled,
+          strictAntiTeleportEnabled,
+        }),
+  );
+  const blocker = useUnsavedChangesGuard({ isDirty, isSaving });
 
   useEffect(() => {
     const loadFarm = async () => {
@@ -167,6 +188,32 @@ export default function EditarFazenda() {
         );
         setStrictRulesEnabled(rollout.strict_rules_enabled);
         setStrictAntiTeleportEnabled(rollout.strict_anti_teleporte);
+        baseline.current = {
+          farmId: activeFarmId,
+          form: {
+            nome: data?.nome ?? "",
+            codigo: data?.codigo ?? "",
+            municipio: data?.municipio ?? "",
+            estado: data?.estado ?? "",
+            cep: data?.cep ?? "",
+            areaTotalHa: data?.area_total_ha ? String(data.area_total_ha) : "",
+            tipoProducao:
+              data?.tipo_producao === "corte" ||
+              data?.tipo_producao === "leite" ||
+              data?.tipo_producao === "mista"
+                ? data.tipo_producao
+                : "",
+            sistemaManejo:
+              data?.sistema_manejo === "confinamento" ||
+              data?.sistema_manejo === "semi_confinamento" ||
+              data?.sistema_manejo === "pastagem"
+                ? data.sistema_manejo
+                : "",
+          },
+          essentialModeEnabled: resolveFarmExperienceMode(metadata) === "essencial",
+          strictRulesEnabled: rollout.strict_rules_enabled,
+          strictAntiTeleportEnabled: rollout.strict_anti_teleporte,
+        };
       } catch (loadError) {
         const message =
           loadError instanceof Error
@@ -227,6 +274,13 @@ export default function EditarFazenda() {
       setFarmMetadata(updatedMetadata);
       setFarmSnapshot({farmId: activeFarmId, updatedAt: saved.updated_at});
       await refreshSettings();
+      baseline.current = {
+        farmId: activeFarmId,
+        form,
+        essentialModeEnabled,
+        strictRulesEnabled,
+        strictAntiTeleportEnabled,
+      };
       navigate("/home");
     } catch (submitError) {
       const message = authOperationError(submitError, "Nao foi possivel salvar a fazenda.");
@@ -268,8 +322,13 @@ export default function EditarFazenda() {
         variant="plain"
         eyebrow="Cadastro da fazenda"
         title="Editar dados estruturais"
+        description="Estas alterações pertencem à fazenda ativa. Confira o nome e o papel vigente antes de salvar; não são preferências pessoais."
         meta={
           <>
+            <StatusBadge tone="neutral">Fazenda ativa</StatusBadge>
+            <StatusBadge tone="neutral">
+              Papel: {role === "owner" ? "Proprietario" : role === "manager" ? "Gerente" : "não carregado"}
+            </StatusBadge>
             <StatusBadge tone="neutral">
               {essentialModeEnabled ? "Modo essencial" : "Modo completo"}
             </StatusBadge>
@@ -548,8 +607,11 @@ export default function EditarFazenda() {
           </Card>
         ) : null}
       </form>
+      <UnsavedChangesDialog
+        blocker={blocker}
+        description="Os dados da fazenda ainda têm alterações não salvas. Se sair agora, esse preenchimento será perdido."
+      />
     </div>
   );
 }
-
 

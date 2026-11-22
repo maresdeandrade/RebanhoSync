@@ -34,13 +34,19 @@ import { selectFarmSyncSummary } from "@/lib/offline/syncPresentation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
+const roleLabel: Record<string, string> = {
+  owner: "Proprietario",
+  manager: "Gerente",
+  cowboy: "Operacao",
+};
+
 interface TopBarProps {
   onMenuClick?: () => void;
 }
 
 export const TopBar = ({ onMenuClick }: TopBarProps) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, role } = useAuth();
   const [activeFarmName, setActiveFarmName] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
@@ -139,12 +145,24 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
                 >
                   <span className="flex min-w-0 items-center gap-2">
                     <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{activeFarmName}</span>
+                    <span className="flex min-w-0 flex-col items-start leading-tight">
+                      <span className="max-w-[240px] truncate">{activeFarmName}</span>
+                      <span className="text-[11px] font-normal text-muted-foreground">
+                        {roleLabel[role ?? ""] ?? "Papel não carregado"}
+                      </span>
+                    </span>
                   </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuLabel>Fazenda atual</DropdownMenuLabel>
+                <DropdownMenuLabel>
+                  <span className="flex flex-col gap-1">
+                    <span>Fazenda atual</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      Papel: {roleLabel[role ?? ""] ?? "não carregado"}
+                    </span>
+                  </span>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/select-fazenda" className="w-full cursor-pointer">

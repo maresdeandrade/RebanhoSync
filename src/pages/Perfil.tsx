@@ -29,14 +29,36 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { resolveNotificationPreferences } from "@/lib/notifications/sanitaryReminders";
 import { applyTheme } from "@/lib/theme";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { authOperationError } from "@/lib/auth/errorMessage";
 import { validateQuietHours } from "@/lib/notifications/sanitaryReminders";
+import { UnsavedChangesDialog } from "@/components/forms/UnsavedChangesDialog";
 
 const REMINDER_DAY_OPTIONS = [7, 3, 1] as const;
+
+type ProfileDraft = {
+  displayName: string;
+  phone: string;
+  avatarUrl: string;
+};
+
+type SettingsDraft = {
+  theme: "system" | "light" | "dark";
+  notificationsEnabled: boolean;
+  agendaReminders: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string;
+  quietHoursEnd: string;
+  reminderDays: number[];
+  sanitaryCriticalAlerts: boolean;
+  sanitaryMandatoryAlerts: boolean;
+  sanitaryUpcomingAlerts: boolean;
+  sanitaryFollowupAlerts: boolean;
+};
 
 export const Perfil = () => {
   const navigate = useNavigate();
@@ -68,6 +90,8 @@ export const Perfil = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const profileBaseline = useRef<ProfileDraft | null>(null);
+  const settingsBaseline = useRef<SettingsDraft | null>(null);
 
   const { toast } = useToast();
 
@@ -105,6 +129,11 @@ export const Perfil = () => {
         setPhone(profile.phone || "");
         setAvatarUrl(profile.avatar_url || "");
       }
+      profileBaseline.current = {
+        displayName: profile?.display_name || "",
+        phone: profile?.phone || "",
+        avatarUrl: profile?.avatar_url || "",
+      };
     } catch (error: unknown) {
       setProfileLoadFailed(true);
       toast({
@@ -132,11 +161,11 @@ export const Perfil = () => {
       if (error) throw error;
 
       if (settings) {
-        setTheme(settings.theme || "system");
-
         const notifications = resolveNotificationPreferences(
           settings.notifications || {},
         );
+        const nextTheme = settings.theme || "system";
+        setTheme(nextTheme);
         setNotificationsEnabled(notifications.enabled);
         setAgendaReminders(notifications.agendaReminders);
         setQuietHoursEnabled(Boolean(notifications.quietHours?.start));
@@ -147,6 +176,33 @@ export const Perfil = () => {
         setSanitaryMandatoryAlerts(notifications.sanitaryMandatory);
         setSanitaryUpcomingAlerts(notifications.sanitaryUpcoming);
         setSanitaryFollowupAlerts(notifications.sanitaryFollowups);
+        settingsBaseline.current = {
+          theme: nextTheme,
+          notificationsEnabled: notifications.enabled,
+          agendaReminders: notifications.agendaReminders,
+          quietHoursEnabled: Boolean(notifications.quietHours?.start),
+          quietHoursStart: notifications.quietHours?.start || "22:00",
+          quietHoursEnd: notifications.quietHours?.end || "06:00",
+          reminderDays: notifications.daysBefore,
+          sanitaryCriticalAlerts: notifications.sanitaryCritical,
+          sanitaryMandatoryAlerts: notifications.sanitaryMandatory,
+          sanitaryUpcomingAlerts: notifications.sanitaryUpcoming,
+          sanitaryFollowupAlerts: notifications.sanitaryFollowups,
+        };
+      } else {
+        settingsBaseline.current = {
+          theme: "system",
+          notificationsEnabled: true,
+          agendaReminders: true,
+          quietHoursEnabled: false,
+          quietHoursStart: "22:00",
+          quietHoursEnd: "06:00",
+          reminderDays: [7, 3, 1],
+          sanitaryCriticalAlerts: true,
+          sanitaryMandatoryAlerts: true,
+          sanitaryUpcomingAlerts: true,
+          sanitaryFollowupAlerts: true,
+        };
       }
       setSettingsLoaded(true);
     } catch (error: unknown) {
@@ -178,6 +234,8 @@ export const Perfil = () => {
 
       if (error) throw error;
       if (!saved || saved.user_id !== user.id) throw new Error("Não foi possível confirmar a gravação do perfil. Tente novamente.");
+
+      profileBaseline.current = { displayName, phone, avatarUrl };
 
       toast({
         title: "Sucesso",
@@ -235,6 +293,19 @@ export const Perfil = () => {
 
       applyTheme(theme);
       await refreshSettings();
+      settingsBaseline.current = {
+        theme,
+        notificationsEnabled,
+        agendaReminders,
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd,
+        reminderDays: [...reminderDays],
+        sanitaryCriticalAlerts,
+        sanitaryMandatoryAlerts,
+        sanitaryUpcomingAlerts,
+        sanitaryFollowupAlerts,
+      };
 
       toast({
         title: "Sucesso",
@@ -346,6 +417,29 @@ export const Perfil = () => {
     }
   };
 
+  const isDirty = Boolean(
+    (profileBaseline.current &&
+      JSON.stringify(profileBaseline.current) !==
+        JSON.stringify({ displayName, phone, avatarUrl })) ||
+      (settingsLoaded &&
+        settingsBaseline.current &&
+        JSON.stringify(settingsBaseline.current) !==
+          JSON.stringify({
+            theme,
+            notificationsEnabled,
+            agendaReminders,
+            quietHoursEnabled,
+            quietHoursStart,
+            quietHoursEnd,
+            reminderDays,
+            sanitaryCriticalAlerts,
+            sanitaryMandatoryAlerts,
+            sanitaryUpcomingAlerts,
+            sanitaryFollowupAlerts,
+          })),
+  );
+  const blocker = useUnsavedChangesGuard({ isDirty, isSaving });
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -360,6 +454,7 @@ export const Perfil = () => {
         variant="plain"
         eyebrow="Conta"
         title="Meu perfil"
+        description="Perfil, aparência e preferências pertencem à sua conta pessoal. Elas não alteram as configurações compartilhadas da fazenda."
         meta={
           <>
             <StatusBadge tone={notificationsEnabled ? "info" : "neutral"}>
@@ -381,6 +476,7 @@ export const Perfil = () => {
             <StatusBadge tone="neutral">
               {farmExperienceMode === "completo" ? "Completo" : "Essencial"}
             </StatusBadge>
+            <StatusBadge tone="neutral">Preferências pessoais</StatusBadge>
           </>
         }
       />
@@ -553,8 +649,11 @@ export const Perfil = () => {
           <FormSection title="Notificacoes">
             <div className="space-y-5">
               <div className="flex flex-col gap-3 rounded-xl border border-border/70 bg-muted/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <Label>Notificacoes gerais</Label>
+                  <div className="space-y-1">
+                    <Label>Notificacoes gerais</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Avisos exibidos dentro do aplicativo; esta preferência não configura push, SMS ou e-mail.
+                    </p>
                 </div>
                 <Switch
                   checked={notificationsEnabled}
@@ -578,6 +677,9 @@ export const Perfil = () => {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="space-y-1">
                         <Label>Horario de silencio</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Usa o horário local do dispositivo e pode atravessar a meia-noite. Não garante entrega de aviso.
+                        </p>
                       </div>
                       <Switch
                         checked={quietHoursEnabled}
@@ -756,9 +858,12 @@ export const Perfil = () => {
           </Button>
         </div>
       </FormSection>
+      <UnsavedChangesDialog
+        blocker={blocker}
+        description="O perfil ou as preferências ainda têm alterações não salvas. Se sair agora, esse preenchimento será perdido."
+      />
     </div>
   );
 };
 
 export default Perfil;
-
