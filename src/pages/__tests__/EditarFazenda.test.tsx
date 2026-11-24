@@ -3,7 +3,12 @@ import "@testing-library/jest-dom";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import {
+  createMemoryRouter,
+  Link,
+  RouterProvider,
+  useLocation,
+} from "react-router-dom";
 
 import EditarFazenda from "@/pages/EditarFazenda";
 
@@ -46,6 +51,32 @@ async function renderPage() {
   );
   await screen.findByRole("button", { name: "Salvar fazenda" });
   return result;
+}
+
+function RouteMarker() {
+  const location = useLocation();
+  return <output data-testid="current-route">{location.pathname}</output>;
+}
+
+async function renderPageWithHomeRoute() {
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/editar-fazenda",
+        element: (
+          <>
+            <Link to="/home">Abrir home</Link>
+            <EditarFazenda />
+          </>
+        ),
+      },
+      { path: "/home", element: <RouteMarker /> },
+    ],
+    { initialEntries: ["/editar-fazenda"] },
+  );
+  render(<RouterProvider router={router} />);
+  await screen.findByRole("button", { name: "Salvar fazenda" });
+  return router;
 }
 
 beforeEach(() => {
@@ -209,5 +240,57 @@ describe("EditarFazenda — acessibilidade dos switches (UX09B)", () => {
     for (const name of names) {
       expect(screen.getByRole("switch", { name })).toBeEnabled();
     }
+  });
+
+  it("navega para /home sem diálogo somente depois da gravação confirmada", async () => {
+    let completeSave!: (value: unknown) => void;
+    mocks.save.mockReturnValue(new Promise((resolve) => {
+      completeSave = resolve;
+    }));
+    const user = userEvent.setup();
+    const router = await renderPageWithHomeRoute();
+
+    await user.clear(screen.getByLabelText("Nome da fazenda"));
+    await user.type(screen.getByLabelText("Nome da fazenda"), "Fazenda atualizada");
+    await user.click(screen.getByRole("button", { name: "Salvar fazenda" }));
+    await user.click(screen.getByRole("link", { name: "Abrir home" }));
+    expect(router.state.location.pathname).toBe("/editar-fazenda");
+    expect(screen.getByText("Descartar alterações não salvas?")).toBeVisible();
+
+    await act(async () => {
+      completeSave({
+        data: { metadata: {}, updated_at: "2026-11-20T00:00:01Z" },
+        error: null,
+      });
+    });
+
+    expect(await screen.findByTestId("current-route")).toHaveTextContent("/home");
+    expect(
+      screen.queryByText("Descartar alterações não salvas?"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("bloqueia saída enquanto grava e preserva o formulário se a gravação falhar", async () => {
+    let rejectSave!: (reason: Error) => void;
+    mocks.save.mockReturnValue(new Promise((_resolve, reject) => {
+      rejectSave = reject;
+    }));
+    const user = userEvent.setup();
+    const router = await renderPageWithHomeRoute();
+
+    await user.clear(screen.getByLabelText("Nome da fazenda"));
+    await user.type(screen.getByLabelText("Nome da fazenda"), "Rascunho preservado");
+    await user.click(screen.getByRole("button", { name: "Salvar fazenda" }));
+    await user.click(screen.getByRole("link", { name: "Abrir home" }));
+
+    expect(router.state.location.pathname).toBe("/editar-fazenda");
+    expect(screen.getByText("Descartar alterações não salvas?")).toBeVisible();
+    await act(async () => rejectSave(new Error("persist failed")));
+
+    expect(router.state.location.pathname).toBe("/editar-fazenda");
+    expect(screen.getByLabelText("Nome da fazenda")).toHaveValue(
+      "Rascunho preservado",
+    );
+    expect(screen.getByText("Descartar alterações não salvas?")).toBeVisible();
   });
 });

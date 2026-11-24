@@ -281,6 +281,7 @@ export default function EditarFazenda() {
         strictRulesEnabled,
         strictAntiTeleportEnabled,
       };
+      blocker.allowNextNavigationTo("/home");
       navigate("/home");
     } catch (submitError) {
       const message = authOperationError(submitError, "Nao foi possivel salvar a fazenda.");

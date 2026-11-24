@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useBeforeUnload, useBlocker } from "react-router-dom";
 
 interface UnsavedChangesGuardOptions {
@@ -10,10 +10,20 @@ export function useUnsavedChangesGuard({
   isDirty,
   isSaving = false,
 }: UnsavedChangesGuardOptions) {
+  const allowedNextPathRef = useRef<string | null>(null);
+  const allowNextNavigationTo = useCallback((pathname: string) => {
+    allowedNextPathRef.current = pathname;
+  }, []);
   const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      isDirty &&
-      currentLocation.pathname !== nextLocation.pathname,
+    ({ currentLocation, nextLocation }) => {
+      const allowedPath = allowedNextPathRef.current;
+      if (allowedPath) {
+        allowedNextPathRef.current = null;
+        if (allowedPath === nextLocation.pathname) return false;
+      }
+
+      return isDirty && currentLocation.pathname !== nextLocation.pathname;
+    },
   );
 
   useBeforeUnload(
@@ -28,5 +38,5 @@ export function useUnsavedChangesGuard({
     ),
   );
 
-  return blocker;
+  return { ...blocker, allowNextNavigationTo };
 }
