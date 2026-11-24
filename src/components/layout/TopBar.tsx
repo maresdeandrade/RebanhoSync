@@ -47,7 +47,8 @@ interface TopBarProps {
 export const TopBar = ({ onMenuClick }: TopBarProps) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { activeFarmId, role } = useAuth();
-  const [activeFarmName, setActiveFarmName] = useState<string | null>(null);
+  const [loadedFarm, setLoadedFarm] = useState<{ farmId: string; name: string } | null>(null);
+  const activeFarmName = loadedFarm?.farmId === activeFarmId ? loadedFarm.name : null;
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
 
@@ -57,9 +58,10 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
   const syncSummary = selectFarmSyncSummary(loadedSyncSummary, activeFarmId);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchFarmName = async () => {
       if (!activeFarmId) {
-        setActiveFarmName(null);
+        setLoadedFarm(null);
         return;
       }
 
@@ -70,12 +72,15 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
         .is("deleted_at", null)
         .single();
 
-      if (!error && data) {
-        setActiveFarmName(data.nome);
+      if (!cancelled && !error && data) {
+        setLoadedFarm({ farmId: activeFarmId, name: data.nome });
       }
     };
 
     fetchFarmName();
+    return () => {
+      cancelled = true;
+    };
   }, [activeFarmId]);
 
   useEffect(() => {
