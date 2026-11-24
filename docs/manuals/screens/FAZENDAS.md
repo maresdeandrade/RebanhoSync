@@ -1,6 +1,6 @@
 # Fazendas e contexto das operações
 
-Atualizado em: 2026-11-21
+Atualizado em: 2026-11-22
 
 **Disponibilidade:** orientação para o Bloco 1 validado localmente, ainda pendente de integração e publicação. Consulte o [estado do projeto](../../context/PROJECT_STATUS.md#estado-atual).
 
@@ -24,13 +24,13 @@ A disponibilidade de uma ação na tela não substitui a conferência de permiss
 
 ## Como alternar entre fazendas
 
-1. Confira se há preenchimento ainda não salvo. A troca pode descartar o rascunho.
+1. Confira se há preenchimento ainda não salvo. Em Perfil, Configuracoes e Editar Fazenda, a troca abre uma confirmação: continue editando ou descarte explicitamente.
 2. Abra o nome da fazenda no cabeçalho e selecione **Trocar fazenda**.
 3. Em **Escolha a fazenda**, confira nome, localização e papel apresentados no cartão.
 4. Selecione o cartão da propriedade desejada e aguarde a abertura do contexto.
 5. Confira novamente o nome no cabeçalho antes de continuar.
 
-Se uma propriedade esperada não aparecer, confira a conta usada, conexão e vínculo com a equipe. Uma troca visual correta não certifica que todas as operações anteriores já foram sincronizadas.
+Se uma propriedade esperada não aparecer, confira a conta usada, conexão e vínculo com a equipe. Uma troca visual correta não certifica que todas as operações anteriores já foram sincronizadas. O papel apresentado é informativo e não substitui a autorização do serviço.
 
 ## Como criar outra propriedade
 
@@ -54,6 +54,6 @@ Se a operação for negada, confira o papel nessa propriedade e solicite auxíli
 
 ## Limitações e confirmação
 
-Abas diferentes podem manter contextos visuais próprios até recarga. Confira o cabeçalho em cada aba. Rascunhos não têm recuperação geral garantida. O indicador de sincronização não substitui a confirmação específica de um salvamento remoto.
+Abas diferentes podem manter contextos visuais próprios até recarga. Confira o cabeçalho em cada aba. A confirmação de descarte protege apenas os formulários delimitados; não há recuperação geral de rascunhos após recarga. O indicador de sincronização não substitui a confirmação específica de um salvamento remoto.
 
 [Referência visual da edição](../images/block1/edit-desktop.png): versão local atual com propriedade sintética. As jornadas validaram contextos e permissões delimitados, sem certificar todos os módulos ou dispositivos físicos.

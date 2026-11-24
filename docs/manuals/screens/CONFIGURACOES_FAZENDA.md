@@ -1,6 +1,6 @@
 # Configurações da fazenda
 
-Atualizado em: 2026-11-21
+Atualizado em: 2026-11-22
 
 **Disponibilidade:** descreve o Bloco 1 validado localmente, ainda pendente de integração e publicação. Consulte o [estado do projeto](../../context/PROJECT_STATUS.md#estado-atual).
 
@@ -8,7 +8,7 @@ Atualizado em: 2026-11-21
 
 Abra **Configuracoes** no menu ou no menu do nome da fazenda no cabeçalho. A tela **Regras e parametros operacionais** reúne unidade de peso e regras de estágio. Os parâmetros são da fazenda selecionada; não são preferências pessoais.
 
-Para identificação, localização, modo da aplicação e opções de segurança, use **Editar cadastro da fazenda** ou **Editar fazenda**. Confira sempre o nome da propriedade antes de salvar.
+Para identificação, localização, modo da aplicação e opções de segurança, use **Editar cadastro da fazenda** ou **Editar fazenda**. Confira sempre o nome e o papel da propriedade antes de salvar.
 
 ## Quem pode usar
 
@@ -55,8 +55,8 @@ Confira a mensagem específica de sucesso e o valor apresentado após reabrir a 
 
 Se outra gravação ocorreu desde a abertura, o aplicativo rejeita a versão antiga e orienta recarga. Anote sua intenção, recarregue, confira os valores atuais e refaça somente o necessário. A proteção preserva mudanças concorrentes das flags e demais chaves; não repita um envio antigo como se tivesse sido aceito.
 
-Em erro de permissão, confira a fazenda e seu papel. Em falha de rede, mantenha o formulário aberto enquanto verifica a conexão; não há promessa de envio posterior automático para esses salvamentos. Consulte a [solução de problemas](../support/TROUBLESHOOTING.md).
+Em erro de permissão, confira a fazenda e seu papel. Em falha de rede, mantenha o formulário aberto enquanto verifica a conexão; o rascunho permanece disponível para nova tentativa e não há promessa de envio posterior automático. Ao sair com alterações pendentes, escolha **Continuar editando** ou **Descartar alterações**. Consulte a [solução de problemas](../support/TROUBLESHOOTING.md).
 
 ## Limitações
 
-Rascunhos podem ser perdidos ao navegar, recarregar ou trocar de fazenda. Uma configuração salva não garante classificação adequada para todo animal nem conformidade sanitária/comercial. O Bloco 1 validou configurações e persistência, sem executar as jornadas operacionais futuras.
+O aviso de descarte protege a navegação entre telas e a troca de fazenda enquanto há alteração real; não há autosave nem recuperação geral após recarga. Uma configuração salva não garante classificação adequada para todo animal nem conformidade sanitária/comercial. O Bloco 1 validou configurações e persistência, sem executar as jornadas operacionais futuras.

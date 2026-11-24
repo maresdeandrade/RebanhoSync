@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Perfil } from "@/pages/Perfil";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,10 +18,11 @@ describe("atalho administrativo do Perfil", () => {
     vi.mocked(useAuth).mockReturnValue({ isSuperAdmin: true, refreshSettings: vi.fn(), farmExperienceMode: "completo" } as ReturnType<typeof useAuth>);
   });
   function renderProfile() {
-    render(<MemoryRouter initialEntries={["/perfil"]}><Routes>
-      <Route path="/perfil" element={<Perfil />} />
-      <Route path="/admin" element={<div>Destino administrativo</div>} />
-    </Routes></MemoryRouter>);
+    const router = createMemoryRouter([
+      { path: "/perfil", element: <Perfil /> },
+      { path: "/admin", element: <div>Destino administrativo</div> },
+    ], { initialEntries: ["/perfil"] });
+    render(<RouterProvider router={router} />);
   }
   it("oferece um único atalho para /admin, sem formulário de curadoria", async () => {
     const user = userEvent.setup();

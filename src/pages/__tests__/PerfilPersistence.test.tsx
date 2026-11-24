@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { Perfil } from '@/pages/Perfil';
 
@@ -35,7 +35,13 @@ vi.mock('@/lib/supabase', () => ({ supabase: {
   },
 } }));
 beforeEach(() => {state.profile=null;state.error=null;state.loadError=null;state.zero=false;state.writes=[];state.toast.mockClear();});
-const open = () => render(<MemoryRouter><Perfil /></MemoryRouter>);
+const open = () => {
+  const router = createMemoryRouter(
+    [{ path: '*', element: <Perfil /> }],
+    { initialEntries: ['/perfil'], future: { v7_startTransition: true } },
+  );
+  return render(<RouterProvider router={router} />);
+};
 async function save() {
   fireEvent.change(await screen.findByLabelText('Nome de exibicao'),{target:{value:'Nome persistido'}});
   fireEvent.click(screen.getByRole('button',{name:'Salvar perfil'}));

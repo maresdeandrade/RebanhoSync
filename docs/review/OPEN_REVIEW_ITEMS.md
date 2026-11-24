@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-11-21
+Atualizado em: 2026-11-22
 
 ## Pendências vigentes — 18/11/2026
 
@@ -19,7 +19,7 @@ O pacote J04/Bloco 1 está preparado para revisão de integração sobre `main@1
 | Item | Situação e próxima ação delimitada |
 |---|---|
 | Integração/publicação | Revisar commits/PR e, sob autorização própria, publicar as duas migrations em ordem e o frontend compatível. Inventário remoto somente leitura ainda não contém J04/Bloco 1. |
-| Recovery, tema Sistema e rascunhos | Lacunas observadas permanecem: recovery ausente; tema exige recarga/reaplicação; não há proteção geral de descarte. Não foram implementados por documentação. |
+| Recovery, tema Sistema e rascunhos | Recovery permanece ausente e tema exige recarga/reaplicação. P1-02 foi implementado localmente apenas em Perfil, Configuracoes e Editar Fazenda, com descarte explícito e preservação em falha de gravação; não há proteção geral nem recuperação após recarga. |
 | Recomendações e cobertura futura | As 12 recomendações são candidatas; avatar, aparelho físico e efeitos operacionais dos módulos futuros não foram certificados. Não há nova fase ou J06 iniciada. |
 
 [Estado canônico](../context/PROJECT_STATUS.md#estado-atual) e [evidência da integração](./evidence/BLOCK1_INTEGRATION_20261121.json). A matriz detalhada continua nos artefatos `.work/block1/`, sem virar backlog obrigatório integral.
