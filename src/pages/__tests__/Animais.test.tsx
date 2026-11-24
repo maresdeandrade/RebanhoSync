@@ -227,7 +227,7 @@ describe("Animais page", () => {
             return [] as ReturnType<typeof useLiveQuery>;
           case 6:
           default:
-            return [mother] as ReturnType<typeof useLiveQuery>;
+            return { status: "ready", animals: [mother] } as ReturnType<typeof useLiveQuery>;
         }
       };
     })());
@@ -266,7 +266,7 @@ describe("Animais page", () => {
       ganhoMedioDiaKg: number | null;
       blocked?: boolean;
     }> = [],
-    loading: { weight?: boolean; agenda?: boolean; regulatory?: boolean; pending?: boolean } = {},
+    loading: { weight?: boolean; agenda?: boolean; regulatory?: boolean; pending?: boolean; readError?: boolean } = {},
   ) {
     const sources = [
       animals ?? [],
@@ -280,8 +280,10 @@ describe("Animais page", () => {
     mockedUseLiveQuery.mockImplementation((query, deps) => {
       const index = callCount++ % 7;
       if (index !== 6) return sources[index] as ReturnType<typeof useLiveQuery>;
-      const search = String(deps?.[1] ?? "").toLowerCase();
-      return animals?.filter(animal => animal.identificacao.toLowerCase().includes(search)) as ReturnType<typeof useLiveQuery>;
+      const search = String(deps?.[2] ?? "").toLowerCase();
+      if (loading.readError) return { status: "error" } as ReturnType<typeof useLiveQuery>;
+      if (animals === undefined) return undefined as ReturnType<typeof useLiveQuery>;
+      return { status: "ready", animals: animals.filter(animal => animal.identificacao.toLowerCase().includes(search)) } as ReturnType<typeof useLiveQuery>;
     });
   }
 
@@ -299,6 +301,15 @@ describe("Animais page", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Carregando animais...");
     expect(screen.queryByText(/Nenhum animal/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Novo animal" })).toHaveAttribute("href", "/animais/novo");
+  });
+
+  it("separa falha da consulta local do estado vazio", () => {
+    mockList([], [], { readError: true });
+    renderList();
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar os animais locais");
+    expect(screen.getByRole("alert")).toHaveTextContent("não indica que a fazenda esteja sem animais");
+    expect(screen.queryByText(/Nenhum animal/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
   });
 
   it("mantem a identidade enquanto as fontes auxiliares carregam e so depois afirma ausencia", () => {
@@ -359,11 +370,11 @@ describe("Animais page", () => {
     expect(screen.getByText("retirado", { exact: true })).toHaveClass("bg-semantic-error-muted");
   });
 
-  it("explica o recorte de ativos e permite consultar outros filtros quando vazio", () => {
+  it("distingue ausência local do recorte filtrado e oferece filtros", () => {
     mockList([]);
     renderList();
-    expect(screen.getByRole("status")).toHaveTextContent("Nenhum animal ativo neste recorte");
-    expect(screen.queryByText("Nenhum animal cadastrado")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Nenhum animal local cadastrado para esta fazenda");
+    expect(screen.getByRole("status")).toHaveTextContent("não confirma a ausência de registros remotos");
     expect(screen.getByRole("textbox", { name: "Buscar animal" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Mostrar filtros/ }));
     expect(screen.getByRole("combobox", { name: "Lote" })).toBeInTheDocument();
@@ -436,7 +447,7 @@ describe("Animais page", () => {
             return [] as ReturnType<typeof useLiveQuery>;
           case 6:
           default:
-            return animaisBase as ReturnType<typeof useLiveQuery>;
+            return { status: "ready", animals: animaisBase } as ReturnType<typeof useLiveQuery>;
         }
       };
     })());
@@ -547,7 +558,7 @@ describe("Animais page", () => {
             return [] as ReturnType<typeof useLiveQuery>;
           case 6:
           default:
-            return [activeAnimal, soldAnimal] as ReturnType<typeof useLiveQuery>;
+            return { status: "ready", animals: [activeAnimal, soldAnimal] } as ReturnType<typeof useLiveQuery>;
         }
       };
     })());
@@ -623,7 +634,7 @@ describe("Animais page", () => {
             return [] as ReturnType<typeof useLiveQuery>;
           case 6:
           default:
-            return [animalJanela, animalRecorrente] as ReturnType<typeof useLiveQuery>;
+            return { status: "ready", animals: [animalJanela, animalRecorrente] } as ReturnType<typeof useLiveQuery>;
         }
       };
     })());

@@ -193,23 +193,26 @@ const CriarFazenda = () => {
           <FormSection title="Dados da fazenda">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="nome">Nome da fazenda</Label>
+                <Label htmlFor="nome">Nome da fazenda (obrigatório)</Label>
                 <Input
                   id="nome"
                   className="h-12 rounded-xl bg-background"
                   placeholder="Ex: Fazenda Santa Clara"
                   disabled={isLoading}
-                  {...register("nome", { required: "Nome e obrigatorio" })}
+                  aria-required="true"
+                  aria-invalid={Boolean(errors.nome)}
+                  aria-describedby={errors.nome ? "nome-error" : undefined}
+                  {...register("nome", { required: "Nome é obrigatório" })}
                 />
                 {errors.nome ? (
-                  <p className="text-sm text-destructive">
+                  <p id="nome-error" role="alert" className="text-sm text-destructive">
                     {errors.nome.message}
                   </p>
                 ) : null}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="codigo">Codigo</Label>
+                <Label htmlFor="codigo">Codigo (opcional)</Label>
                 <Input
                   id="codigo"
                   className="h-12 rounded-xl bg-background"
@@ -220,7 +223,7 @@ const CriarFazenda = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="area_total_ha">Area total (ha)</Label>
+                <Label htmlFor="area_total_ha">Area total (ha, opcional)</Label>
                 <Input
                   id="area_total_ha"
                   type="number"
@@ -239,7 +242,7 @@ const CriarFazenda = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="municipio">Municipio</Label>
+                <Label htmlFor="municipio">Municipio (opcional)</Label>
                 <Input
                   id="municipio"
                   className="h-12 rounded-xl bg-background"
@@ -250,7 +253,7 @@ const CriarFazenda = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="estado">Estado</Label>
+                <Label htmlFor="estado">Estado (opcional)</Label>
                 <select
                   id="estado"
                   className={selectClassName}
@@ -289,7 +292,7 @@ const CriarFazenda = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cep">CEP</Label>
+                <Label htmlFor="cep">CEP (opcional)</Label>
                 <Input
                   id="cep"
                   className="h-12 rounded-xl bg-background"
@@ -322,7 +325,7 @@ const CriarFazenda = () => {
           <FormSection title="Perfil produtivo">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Tipo de producao</Label>
+                <Label>Tipo de producao (opcional)</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { value: "corte", label: "Corte" },
@@ -354,7 +357,7 @@ const CriarFazenda = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Sistema de manejo</Label>
+                <Label>Sistema de manejo (opcional)</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { value: "pastagem", label: "Pastagem" },
@@ -410,5 +413,3 @@ const CriarFazenda = () => {
 };
 
 export default CriarFazenda;
-
-

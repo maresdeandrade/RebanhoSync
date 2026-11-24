@@ -211,6 +211,9 @@ export function FarmLifecycleSettingsPanel({
       }
     >
       <div className="space-y-5">
+        <p className="text-sm text-muted-foreground">
+          As regras orientam a classificação e a aplicação de estágios de vida; não mudam as permissões do papel. Somente proprietário ou gerente pode editar estas configurações.
+        </p>
         <div className="grid gap-4 xl:grid-cols-[1.05fr_1.35fr]">
           <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
             <div className="space-y-1">

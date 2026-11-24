@@ -147,14 +147,18 @@ describe("syncQueries", () => {
       expect(summary.errorCount).toBe(farm === FARM_A ? 1 : 0);
       expect(summary.reconcileCount).toBe(farm === FARM_A ? 1 : 0);
       expect(getFarmSyncHealth(summary).stage).toBe(
-        farm === FARM_A ? "error" : "healthy",
+        farm === FARM_A ? "error" : "unknown",
       );
     }
   });
 
   it("keeps DONE with an empty functional queue unhealthy until its obligation is removed", async () => {
     await db.queue_gestures.add(
-      makeGesture(FARM_A, { status: "DONE", sync_result: "APPLIED" }),
+      makeGesture(FARM_A, {
+        status: "DONE",
+        sync_result: "APPLIED",
+        completed_at: "2026-04-07T10:00:00.000Z",
+      }),
     );
     const key = `${FARM_A}:movement-v1`;
     await db.sync_reconcile_obligations.put({

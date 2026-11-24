@@ -100,7 +100,9 @@ export const MemberRoleDialog = ({
           title={member?.display_name ?? "Membro"}
           actions={
             member ? (
-              <StatusBadge tone="neutral">Atual: {member.role}</StatusBadge>
+              <StatusBadge tone="neutral">
+                Atual: {member.role === "owner" ? "Proprietário" : member.role === "manager" ? "Gerente" : "Operador"}
+              </StatusBadge>
             ) : null
           }
           contentClassName="space-y-4"
@@ -116,12 +118,15 @@ export const MemberRoleDialog = ({
               </SelectTrigger>
               <SelectContent>
                 {callerRole === "owner" ? (
-                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="owner">Proprietário</SelectItem>
                 ) : null}
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="cowboy">Cowboy</SelectItem>
+                <SelectItem value="manager">Gerente</SelectItem>
+                <SelectItem value="cowboy">Operador</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-sm text-muted-foreground">
+              Somente o Proprietário pode atribuir esse papel. Gerentes administram a equipe e as configurações permitidas; Operadores (papel Cowboy) executam rotinas operacionais e podem gravar estágios de vida dos animais, conforme a política do sistema. Essencial/Completo organiza a interface e não muda essas permissões.
+            </p>
           </div>
         </FormSection>
 

@@ -107,6 +107,20 @@ afterEach(() => {
 });
 
 describe("EditarFazenda — acessibilidade dos switches (UX09B)", () => {
+  it("associa o erro do nome obrigatório ao campo e move o foco sem salvar", async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    const name = screen.getByLabelText(/Nome da fazenda/);
+    await user.clear(name);
+    await user.click(screen.getByRole("button", { name: "Salvar fazenda" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Nome da fazenda é obrigatório.");
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    expect(name).toHaveAttribute("aria-describedby", "farm-name-error");
+    expect(name).toHaveFocus();
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
   it("associa os tres nomes visuais a switches com IDs exclusivos", async () => {
     const { container } = await renderPage();
 
@@ -250,8 +264,8 @@ describe("EditarFazenda — acessibilidade dos switches (UX09B)", () => {
     const user = userEvent.setup();
     const router = await renderPageWithHomeRoute();
 
-    await user.clear(screen.getByLabelText("Nome da fazenda"));
-    await user.type(screen.getByLabelText("Nome da fazenda"), "Fazenda atualizada");
+    await user.clear(screen.getByLabelText(/^Nome da fazenda/));
+    await user.type(screen.getByLabelText(/^Nome da fazenda/), "Fazenda atualizada");
     await user.click(screen.getByRole("button", { name: "Salvar fazenda" }));
     await user.click(screen.getByRole("link", { name: "Abrir home" }));
     expect(router.state.location.pathname).toBe("/editar-fazenda");
@@ -278,8 +292,8 @@ describe("EditarFazenda — acessibilidade dos switches (UX09B)", () => {
     const user = userEvent.setup();
     const router = await renderPageWithHomeRoute();
 
-    await user.clear(screen.getByLabelText("Nome da fazenda"));
-    await user.type(screen.getByLabelText("Nome da fazenda"), "Rascunho preservado");
+    await user.clear(screen.getByLabelText(/^Nome da fazenda/));
+    await user.type(screen.getByLabelText(/^Nome da fazenda/), "Rascunho preservado");
     await user.click(screen.getByRole("button", { name: "Salvar fazenda" }));
     await user.click(screen.getByRole("link", { name: "Abrir home" }));
 
@@ -288,7 +302,7 @@ describe("EditarFazenda — acessibilidade dos switches (UX09B)", () => {
     await act(async () => rejectSave(new Error("persist failed")));
 
     expect(router.state.location.pathname).toBe("/editar-fazenda");
-    expect(screen.getByLabelText("Nome da fazenda")).toHaveValue(
+    expect(screen.getByLabelText(/^Nome da fazenda/)).toHaveValue(
       "Rascunho preservado",
     );
     expect(screen.getByText("Descartar alterações não salvas?")).toBeVisible();
