@@ -1,6 +1,6 @@
 # Perfil pessoal e preferências
 
-Atualizado em: 2026-11-21
+Atualizado em: 2026-11-22
 
 **Disponibilidade:** capítulo da versão do Bloco 1 validada localmente, ainda pendente de integração e publicação. Consulte o [estado do projeto](../../context/PROJECT_STATUS.md#estado-atual).
 
@@ -17,7 +17,7 @@ Cada pessoa autenticada pode manter o próprio perfil e preferências. Propriet�
 1. Abra a aba **Perfil** e confira o **E-mail** exibido.
 2. Preencha **Nome de exibicao** e **Telefone** conforme necessário.
 3. Selecione **Salvar perfil** e aguarde **Perfil atualizado com sucesso**.
-4. Reabra ou recarregue a tela para conferir os valores, se necessário.
+4. Reabra a tela para conferir os valores, se necessário. Se tentar sair com alterações pendentes, escolha **Continuar editando** ou **Descartar alterações**.
 
 O perfil complementar pode estar inicialmente vazio mesmo que você tenha informado nome e telefone no cadastro da conta. O primeiro salvamento cria esse perfil; os seguintes atualizam a mesma pessoa.
 
@@ -35,9 +35,9 @@ No modo Sistema, uma mudança de aparência do sistema operacional com a página
 2. Confira **Lembretes de agenda** e as categorias sanitárias exibidas: **Criticos e atrasados**, **Obrigatorios do dia**, **Proximo procedimento** e **Janela antecipada**.
 3. Algumas categorias ficam indisponíveis no modo Essencial. Isso não cria um canal adicional nem garante aviso para toda situação.
 4. Em **Antecedencia dos lembretes**, selecione as janelas disponíveis de 7, 3 e 1 dia. Pelo menos uma janela permanece selecionada.
-5. Selecione **Salvar preferencias** e aguarde **Preferencias atualizadas com sucesso**.
+5. Selecione **Salvar preferencias** e aguarde **Preferencias atualizadas com sucesso**. O aviso é interno à aplicação; não há envio por push, SMS ou email.
 
-O fluxo sanitário inspecionado mostra avisos dentro da aplicação, quando há plano derivado de pendências elegíveis. Não há promessa de push, SMS, email ou disparo contínuo com o app fechado. Preferência salva não significa aviso efetivamente entregue nem tarefa executada.
+O fluxo sanitário inspecionado mostra avisos dentro da aplicação, quando há plano derivado de pendências elegíveis. Não há disparo contínuo com o app fechado. Preferência salva não significa aviso efetivamente entregue nem tarefa executada.
 
 ## Como configurar o horário de silêncio
 
@@ -49,7 +49,7 @@ Confira o intervalo depois de salvar e reabrir a aba. Para desativar o período,
 
 Se o perfil não carregar, use **Tentar carregar perfil** antes de editar/salvar. Ausência inicial de perfil é diferente de falha de carregamento.
 
-Em erro de gravação, o formulário mantém o rascunho na tela; confira conexão e mensagem antes de tentar novamente. Não há sucesso sem confirmação da linha gravada. Se a mensagem indicar mudança de sessão, recarregue e confira sua conta. Anote alterações importantes antes de sair: recuperação do rascunho após navegação ou recarga não é garantida.
+Em erro de gravação, o formulário mantém o rascunho na tela; confira conexão e mensagem antes de tentar novamente. Não há sucesso sem confirmação da linha gravada. Se a mensagem indicar mudança de sessão, recarregue e confira sua conta. A navegação com alteração pendente exige decisão explícita; a recuperação após recarga não é garantida.
 
 ## Limitações e referência visual
 

@@ -1,6 +1,6 @@
 # Bloco 1 — Matriz consolidada J01–J05
 
-Atualizado em: 2026-11-21
+Atualizado em: 2026-11-22
 
 Índice central dos 26 grupos consolidados. Base funcional original: `157376d9`; correções de runtime: `035e8b5f`; documentação inicial: `97022bb2`. Este documento preserva a análise e os resultados locais do Bloco 1. Integração e CI são registrados no [PR #306](https://github.com/maresdeandrade/RebanhoSync/pull/306); publicação segue o [plano coordenado](BLOCK1_REMOTE_PUBLICATION_PLAN.md) e não decorre da presença dos arquivos no Git.
 
@@ -40,8 +40,8 @@ Os IDs de cenários são referências aos relatórios acima, não defeitos adici
 | B1-13 | J04-SC01 | Destinatário, replay e reingresso | corrigido localmente | Migration J04. | member-invites.local.test.mjs + prova Auth/concorrência original J04 preservada |
 | B1-14 | J04-SC02 | Proteção de proprietário e último owner | corrigido localmente | Migration J04. | member-invites.local.test.mjs + concorrência real original J04; integração com trigger retestada |
 | B1-15 | J05-04 | Tema Sistema durante mudança do SO | aberto; não bloqueante neste recorte | Nenhuma. | Futuro: alternar prefers-color-scheme com página aberta; evidência J05 preservada, sem repetir agora. |
-| B1-16 | J02-04, J03-U01, J03-S07, J05-05 | Descarte de rascunhos entre navegação, recarga e fazenda | candidato; consolidado sem implementação | Não necessária para aviso. | Futuro: navegar/voltar/trocar fazenda, manter edição ou descartar explicitamente, sem submissão/duplicação. |
-| B1-17 | J03-U02, J03-U05, J04-U02 | Fazenda ativa e alcance do salvamento | candidato | Nenhuma nova fonte. | Futuro: duas propriedades e papéis diferentes, duas abas e viewport mobile. |
+| B1-16 | J02-04, J03-U01, J03-S07, J05-05 | Descarte de rascunhos entre navegação, recarga e fazenda | corrigido localmente neste recorte | Não necessária para aviso. | Perfil, Configuracoes e Editar Fazenda bloqueiam navegação com alteração real, permitem continuar editando ou exigem descarte explícito; falha de gravação preserva o rascunho. Não é guard universal nem recuperação após recarga. |
+| B1-17 | J03-U02, J03-U05, J04-U02 | Fazenda ativa e alcance do salvamento | corrigido localmente neste recorte | Nenhuma nova fonte. | Cabeçalho, seleção e telas de fazenda exibem propriedade/papel; Perfil declara escopo pessoal e Configuracoes/Editar Fazenda declaram escopo da fazenda. Apresentação não substitui RLS/RPC. |
 | B1-18 | J02-05, J03-U03, J04-U01 | Terminologia, obrigatoriedade e básico/avançado | candidato | Nenhuma. | Futuro: tarefa de primeiro acesso e entendimento de controles indisponíveis. |
 | B1-19 | J03-U04 | Estado local e confirmação remota | candidato | Nenhuma. | Futuro: fila vazia, pendente, offline e confirmação desconhecida. |
 | B1-20 | J02-06 | Estados vazios e primeiros passos | candidato | Nenhuma. | Futuro: fazenda vazia versus rebanho filtrado. |
@@ -56,9 +56,9 @@ Os IDs de cenários são referências aos relatórios acima, não defeitos adici
 
 | Prioridade | Tema e proposta | Benefício | Fonte existente | Custo | Risco |
 |---|---|---|---|---|---|
-| P1 | Contexto e escopo: Nome/código da fazenda, papel e salvamento pessoal ou da fazenda | Evitar alteração no contexto errado. | fazendas, user_fazendas.role, active_fazenda_id e user_settings | baixo | baixo; não derivar autorização da apresentação |
-| P1 | Rascunhos: Confirmação única de descarte e retorno à edição | Reduzir retrabalho sem salvar automaticamente. | Estado do formulário e rotas existentes; chave por usuário/fazenda se houver rascunho | médio | médio; bloqueio de navegação e vazamento entre fazendas |
-| P1 | Notificações: Explicar canal in-app, categorias, opções indisponíveis e horário local | Permitir configurar efeitos que existem. | user_settings.notifications, Agenda e SanitaryNotificationManager | baixo | baixo; não prometer push/SMS/email |
+| P1-01 | Contexto e escopo: Nome/código da fazenda, papel e salvamento pessoal ou da fazenda | Evitar alteração no contexto errado. | fazendas, user_fazendas.role, active_fazenda_id e user_settings | baixo | implementado localmente; não derivar autorização da apresentação |
+| P1-02 | Rascunhos: Confirmação única de descarte e retorno à edição | Reduzir retrabalho sem salvar automaticamente. | Estado do formulário e rotas existentes | médio | implementado localmente apenas nas telas delimitadas; sem autosave, store de rascunho ou guard universal |
+| P1-03 | Notificações: Explicar canal in-app, categorias, opções indisponíveis e horário local | Permitir configurar efeitos que existem. | user_settings.notifications, Agenda e SanitaryNotificationManager | baixo | implementado localmente; não promete push/SMS/email |
 | P2 | Obrigatoriedade e mobile: Marcar campos obrigatórios/opcionais e organizar seções longas | Reduzir tentativas e scroll sem novos campos obrigatórios. | Formulários e componentes atuais | baixo a médio | baixo a médio; foco, teclado e navegação inferior |
 | P2 | Terminologia e controles avançados: Traduzir papéis por capacidades e explicar efeito dos parâmetros | Melhorar compreensão e evitar mudanças acidentais. | Membership, metadata e contratos implementados | baixo a médio | médio; preservar valores e dimensões de classificação |
 | P2 | Primeiros passos: Distinguir vazio real de recorte e destacar ação inicial | Ajudar a iniciar operação sem criar registros automaticamente. | Contagens e atalhos existentes | baixo | baixo; isolamento e leitura consistente |
@@ -88,4 +88,4 @@ Etapas produtivas, área pecuária, novas preferências de indicadores e dados d
 - Resultados anteriores de SQL, concorrência, Chromium, lint e governança estão relacionados no [registro de integração](evidence/BLOCK1_INTEGRATION_20261121.json). O [preflight de publicação](evidence/BLOCK1_RELEASE_PREFLIGHT_20261121.json) é um snapshot anterior à proteção Vercel autorizada.
 - O inventário local identifica quais arquivos completos não foram arquivados no Git. Referências a capturas dentro dos JSONs são identificadores do acervo local, não links portáteis para imagens ausentes.
 - O status “corrigido localmente” nesta matriz não certifica frontend ou banco de produção. Migrations remotas e deploy continuam sujeitos a autorização separada.
-- Recovery, tema Sistema dinâmico, descarte de rascunhos, avatar e aparelho físico mantêm os limites originais. Não houve nova execução integral de J01–J05 para criar estes documentos. J06 não foi iniciada.
+- Recovery, tema Sistema dinâmico, recuperação após recarga, avatar e aparelho físico mantêm os limites originais. A proteção de rascunho deste recorte é limitada a Perfil, Configuracoes e Editar Fazenda; LoteNovo conserva seu guard existente. Não houve nova execução integral de J01–J05 para criar estes documentos. J06 não foi iniciada.
