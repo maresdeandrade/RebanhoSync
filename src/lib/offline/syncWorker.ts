@@ -1,6 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import type { Transaction } from "dexie";
 import { db } from "./db";
+import { draftVersions, packDraftVersions } from "./animalEditDrafts";
 import {
   recordGestureDiagnostic,
   recordAcknowledgementIfCommitted,
@@ -19,6 +20,7 @@ import {
 import { env } from "@/lib/env";
 import { supabase } from "@/lib/supabase";
 import type {
+  Animal,
   Gesture,
   InsumoMovimentacao,
   Operation,
@@ -2707,10 +2709,12 @@ export async function processGesture(gesture: Gesture) {
         );
         const refreshTables = new Set<string>();
 
-        // UPDATE advances the server CAS revision. Reconcile that snapshot even
-        // for APPLIED, so a drained obligation cannot leave the next intent stale.
+        // Both INSERT and UPDATE need the authoritative server CAS revision.
+        const hasAnimalInsert = ops.some(
+          (op) => getRemoteTableName(op.table) === "animais" && op.action === "INSERT",
+        );
         if (
-          ops.some(
+          hasAnimalInsert || ops.some(
             (op) =>
               getRemoteTableName(op.table) === "animais" &&
               op.action === "UPDATE",
@@ -2778,7 +2782,7 @@ export async function processGesture(gesture: Gesture) {
         let ackCommitted = false;
         await db.transaction(
           "rw",
-          [db.queue_gestures, db.queue_ops, db.sync_reconcile_obligations],
+          [db.queue_gestures, db.queue_ops, db.sync_reconcile_obligations, db.local_animal_edit_drafts_v2],
           async () => {
             const current = await loadSyncingGestureAndPersistRequirements(
               gesture.client_tx_id,
@@ -2787,6 +2791,38 @@ export async function processGesture(gesture: Gesture) {
             );
             if (!current) {
               return;
+            }
+
+            const acknowledgedDrafts = ops.some(op => op.table === "animais" && op.action === "UPDATE")
+              ? await db.local_animal_edit_drafts_v2.where("fazenda_id").equals(gesture.fazenda_id).toArray()
+              : [];
+            for (const draft of acknowledgedDrafts) {
+              let changed = false;
+              const remainingVersions = [];
+              for (const version of draftVersions(draft)) {
+                const submitted = version.submission;
+                const applied = submitted?.client_tx_id === gesture.client_tx_id && result.results.some(entry => entry.op_id === submitted.client_op_id && entry.status === "APPLIED");
+                if (submitted && applied && submitted.version_id === version.version_id) {
+                  changed = true;
+                  continue;
+                } else if (submitted && applied) {
+                  const operation = ops.find(op => op.client_op_id === submitted.client_op_id);
+                  if (operation?.table === "animais" && operation.action === "UPDATE" &&
+                      operation.record.id === draft.animal_id && operation.record.fazenda_id === draft.fazenda_id &&
+                      operation.before_snapshot && Number.isSafeInteger(operation.expected_revision) && Number(operation.expected_revision) > 0) {
+                    // The server trigger advances one revision per accepted UPDATE; a pull must still match.
+                    version.baseline = { ...operation.before_snapshot, ...operation.record, revision: Number(operation.expected_revision) + 1 } as Animal;
+                    version.submission = undefined;
+                    changed = true;
+                  }
+                }
+                remainingVersions.push(version);
+              }
+              if (changed) {
+                const packed = packDraftVersions(remainingVersions);
+                if (packed) await db.local_animal_edit_drafts_v2.put(packed);
+                else await db.local_animal_edit_drafts_v2.delete([draft.user_id, draft.fazenda_id, draft.animal_id]);
+              }
             }
 
             await db.queue_ops.bulkDelete(
@@ -2852,6 +2888,7 @@ export async function processGesture(gesture: Gesture) {
               Array.from(refreshTables),
               {
                 mode: getReconciliationPullMode(gesture.fazenda_id),
+                ...(hasAnimalInsert ? { tableModes: { animais: "merge" as const } } : {}),
                 ...(animalId
                   ? {
                       tableModes: { animais: "merge" as const },

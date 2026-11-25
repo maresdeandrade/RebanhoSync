@@ -71,6 +71,7 @@ import {
 import {
   drainReconciliationObligations,
   processGesture,
+  recoverErroredGesturesOnce,
   startSyncWorker,
   stopSyncWorker,
 } from "../syncWorker";
@@ -102,6 +103,7 @@ async function clearStores() {
       db.queue_ops,
       db.sync_reconcile_obligations,
       db.local_ownership,
+      db.local_animal_edit_drafts_v2,
     ],
     async () => {
       await db.event_eventos.clear();
@@ -111,6 +113,7 @@ async function clearStores() {
       await db.queue_ops.clear();
       await db.sync_reconcile_obligations.clear();
       await db.local_ownership.clear();
+      await db.local_animal_edit_drafts_v2.clear();
     },
   );
 }
@@ -287,6 +290,116 @@ describe("sync worker reconciliation drain", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     await clearStores();
+  });
+
+  it.each([false, true])("ACK preserva apenas versão posterior do rascunho: %s", async (newer) => {
+    const animalId = "20000000-0000-4000-8000-000000000001";
+    const baseline = { id: animalId, fazenda_id: farmId, identificacao: "DRAFT", sexo: "F", status: "ativo", payload: {}, revision: 1 };
+    await db.state_animais.put(baseline as never);
+    await db.local_animal_edit_drafts_v2.put({ user_id: "user-c3b", fazenda_id: farmId, animal_id: animalId,
+      version_id: "v1", baseline: baseline as never, values: { nome: "v1" } });
+    await createGesture(farmId, [{ table: "animais", action: "UPDATE", record: { id: animalId, nome: "v1" } }], {
+      clientTxId: txId, clientOpIds: [opIds[0]], animalEditBaseline: baseline as never,
+      animalDraftSubmission: { userId: "user-c3b", farmId, animalId, versionId: "v1" },
+    });
+    if (newer) await db.local_animal_edit_drafts_v2.update(["user-c3b", farmId, animalId], { version_id: "v2", values: { nome: "v2" } });
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ results: [{ op_id: opIds[0], status: "APPLIED" }] }), { status: 200 }));
+    await processGesture(await loadGesture());
+    const remaining = await db.local_animal_edit_drafts_v2.get(["user-c3b", farmId, animalId]);
+    if (newer) {
+      expect(remaining).toMatchObject({ version_id: "v2", values: { nome: "v2" }, baseline: { nome: "v1", revision: 2 } });
+      await db.state_animais.update(animalId, { revision: 2 });
+      const nextTx = await createGesture(farmId, [{ table: "animais", action: "UPDATE", record: { id: animalId, nome: "v2" } }], {
+        animalEditBaseline: remaining!.baseline,
+        animalDraftSubmission: { userId: "user-c3b", farmId, animalId, versionId: "v2" },
+      });
+      expect((await db.queue_ops.where("client_tx_id").equals(nextTx).first())?.expected_revision).toBe(2);
+    }
+    else expect(remaining).toBeUndefined();
+    expect((await loadGesture()).status).toBe("DONE");
+  });
+
+  it.each(["v1", "v2"])("ACK de %s remove só a versão enviada e preserva a concorrente", async selected => {
+    const animalId = "20000000-0000-4000-8000-000000000001";
+    const baseline = { id: animalId, fazenda_id: farmId, identificacao: "DRAFT", sexo: "F", status: "ativo", payload: {}, revision: 1 };
+    const first = { user_id: "user-c3b", fazenda_id: farmId, animal_id: animalId, version_id: "v1", baseline: baseline as never, values: { nome: "A" } };
+    const second = { ...first, version_id: "v2", values: { nome: "B" } };
+    await db.state_animais.put(baseline as never);
+    await db.local_animal_edit_drafts_v2.put({ ...first, conflicts: [second] });
+    await createGesture(farmId, [{ table: "animais", action: "UPDATE", record: { id: animalId, nome: selected === "v1" ? "A" : "B" } }], {
+      clientTxId: txId, clientOpIds: [opIds[0]], animalEditBaseline: baseline as never,
+      animalDraftSubmission: { userId: "user-c3b", farmId, animalId, versionId: selected, confirmedVersions: ["v1", "v2"] },
+    });
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ results: [{ op_id: opIds[0], status: "APPLIED" }] }), { status: 200 }));
+    await processGesture(await loadGesture());
+    const remaining = await db.local_animal_edit_drafts_v2.get(["user-c3b", farmId, animalId]);
+    expect(remaining).toMatchObject({ version_id: selected === "v1" ? "v2" : "v1", values: { nome: selected === "v1" ? "B" : "A" } });
+    expect(remaining?.conflicts).toBeUndefined();
+    expect((await loadGesture()).status).toBe("DONE");
+  });
+
+  it.each(["network", "conflict"])("preserva ambas as versões em %s", async failure => {
+    const animalId = "20000000-0000-4000-8000-000000000001";
+    const baseline = { id: animalId, fazenda_id: farmId, identificacao: "DRAFT", sexo: "F", status: "ativo", payload: {}, revision: 1 };
+    const first = { user_id: "user-c3b", fazenda_id: farmId, animal_id: animalId, version_id: "v1", baseline: baseline as never, values: { nome: "A" } };
+    const second = { ...first, version_id: "v2", values: { nome: "B" } };
+    await db.state_animais.put(baseline as never);
+    await db.local_animal_edit_drafts_v2.put({ ...first, conflicts: [second] });
+    await createGesture(farmId, [{ table: "animais", action: "UPDATE", record: { id: animalId, nome: "B" } }], {
+      clientTxId: txId, clientOpIds: [opIds[0]], animalEditBaseline: baseline as never,
+      animalDraftSubmission: { userId: "user-c3b", farmId, animalId, versionId: "v2", confirmedVersions: ["v1", "v2"] },
+    });
+    if (failure === "network") vi.mocked(fetch).mockRejectedValueOnce(new Error("Failed to fetch"));
+    else vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ results: [{ op_id: opIds[0], status: "CONFLICT", reason_code: "REVISION_CONFLICT" }] }), { status: 200 }));
+    await processGesture(await loadGesture());
+    const remaining = await db.local_animal_edit_drafts_v2.get(["user-c3b", farmId, animalId]);
+    expect(remaining).toMatchObject({ version_id: "v1", values: { nome: "A" }, conflicts: [{ version_id: "v2", values: { nome: "B" } }] });
+    if (failure === "network") {
+      await recoverErroredGesturesOnce();
+      vi.spyOn(Date, "now").mockReturnValue(Date.now() + 3600000);
+      vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ results: [{ op_id: opIds[0], status: "APPLIED" }] }), { status: 200 }));
+      await processGesture(await loadGesture());
+      expect((await loadGesture()).status).toBe("DONE");
+      expect(await db.local_animal_edit_drafts_v2.get(["user-c3b", farmId, animalId])).toMatchObject({ version_id: "v1", values: { nome: "A" } });
+    }
+  });
+
+  it.each(["network", "rejection", "ack-abort"])("preserva rascunho em falha parcial: %s", async (failure) => {
+    const animalId = "20000000-0000-4000-8000-000000000001";
+    const baseline = { id: animalId, fazenda_id: farmId, identificacao: "DRAFT", sexo: "F", status: "ativo", payload: {}, revision: 1 };
+    await db.state_animais.put(baseline as never);
+    await db.local_animal_edit_drafts_v2.put({ user_id: "user-c3b", fazenda_id: farmId, animal_id: animalId,
+      version_id: "v1", baseline: baseline as never, values: { nome: "v1" } });
+    await createGesture(farmId, [{ table: "animais", action: "UPDATE", record: { id: animalId, nome: "v1" } }], {
+      clientTxId: txId, clientOpIds: [opIds[0]], animalEditBaseline: baseline as never,
+      animalDraftSubmission: { userId: "user-c3b", farmId, animalId, versionId: "v1" },
+    });
+    if (failure === "network") vi.mocked(fetch).mockRejectedValueOnce(new Error("Failed to fetch"));
+    else vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ results: [{ op_id: opIds[0], status: failure === "rejection" ? "CONFLICT" : "APPLIED", reason_code: "REVISION_CONFLICT" }] }), { status: 200 }));
+    if (failure === "ack-abort") vi.spyOn(db.queue_ops, "bulkDelete").mockRejectedValueOnce(new Error("injected"));
+    await processGesture(await loadGesture());
+    expect(await db.local_animal_edit_drafts_v2.get(["user-c3b", farmId, animalId])).toMatchObject({ version_id: "v1", values: { nome: "v1" } });
+  });
+
+  it("replay após resposta perdida confirma a mesma operação e remove seu rascunho", async () => {
+    const animalId = "20000000-0000-4000-8000-000000000001";
+    const baseline = { id: animalId, fazenda_id: farmId, identificacao: "DRAFT", sexo: "F", status: "ativo", payload: {}, revision: 1 };
+    await db.state_animais.put(baseline as never);
+    await db.local_animal_edit_drafts_v2.put({ user_id: "user-c3b", fazenda_id: farmId, animal_id: animalId,
+      version_id: "v1", baseline: baseline as never, values: { nome: "v1" } });
+    await createGesture(farmId, [{ table: "animais", action: "UPDATE", record: { id: animalId, nome: "v1" } }], {
+      clientTxId: txId, clientOpIds: [opIds[0]], animalEditBaseline: baseline as never,
+      animalDraftSubmission: { userId: "user-c3b", farmId, animalId, versionId: "v1" },
+    });
+    vi.mocked(fetch).mockRejectedValueOnce(new Error("Failed to fetch"));
+    await processGesture(await loadGesture());
+    expect(await db.local_animal_edit_drafts_v2.get(["user-c3b", farmId, animalId])).toBeDefined();
+    await recoverErroredGesturesOnce();
+    vi.spyOn(Date, "now").mockReturnValue(Date.now() + 3600000);
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ results: [{ op_id: opIds[0], status: "APPLIED" }] }), { status: 200 }));
+    await processGesture(await loadGesture());
+    expect((await loadGesture()).status).toBe("DONE");
+    expect(await db.local_animal_edit_drafts_v2.get(["user-c3b", farmId, animalId])).toBeUndefined();
   });
 
   it.each(["missing", "stale", "valid", "advanced", "terminal", "otherfarm", "network", "changed"] as const)("recupera dependência V3 apenas com evidência autorizada: %s", async scenario => {
@@ -567,6 +680,19 @@ describe("sync worker reconciliation drain", () => {
     await db.local_ownership.toCollection().modify({ owner_user_id: "different-owner" });
     await expect(exportSyncDiagnostics(farmId)).rejects.toThrow();
     expect((await loadGesture()).status).toBe("DONE");
+  });
+
+  it("INSERT animal APPLIED inclui animais na obligation mesmo se o pull falhar", async () => {
+    const animalId = "20000000-0000-4000-8000-000000000001";
+    await createGesture(farmId, [{ table: "animais", action: "INSERT", record: {
+      id: animalId, identificacao: "J06-TEST", sexo: "F", status: "ativo", payload: {},
+    } }], { clientTxId: txId, clientOpIds: [opIds[0]] });
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ results: [{ op_id: opIds[0], status: "APPLIED" }] }), { status: 200 }));
+    mocks.pullDataForFarm.mockRejectedValueOnce(new Error("Failed to fetch"));
+    await processGesture(await loadGesture());
+    expect(await loadGesture()).toMatchObject({ status: "DONE", sync_result: "APPLIED" });
+    expect(await getObligation(farmId, "factual")).toMatchObject({ tables: expect.arrayContaining(["animais", "agenda_itens"]) });
+    expect(mocks.pullDataForFarm).toHaveBeenCalledWith(farmId, expect.arrayContaining(["animais"]), expect.anything());
   });
 
   it("UPDATE animais APPLIED inclui snapshot CAS na obligation e drena com merge em fazenda nao ativa", async () => {
