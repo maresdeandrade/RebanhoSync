@@ -10,7 +10,8 @@ describe("v34 withdrawal provenance is additive and pull-only", () => {
     const current = new OfflineDB(name);
     const addedStores = ["catalog_sanitario_produto_class_links_v2", "catalog_sanitario_produto_carencia_fontes_v2", "ops_sanitario_participacoes",
       "ops_sanitario_participacao_operacoes", "ops_sanitario_agenda_resultados",
-      "ops_sanitario_continuidade_solicitacoes", "local_sanitario_participacoes"];
+      "ops_sanitario_continuidade_solicitacoes", "local_sanitario_participacoes",
+      "local_animal_edit_drafts", "local_animal_edit_drafts_v2"];
     const stores = Object.fromEntries(current.tables.filter(t => !addedStores.includes(t.name))
       .map(t => [t.name, [t.schema.primKey.src, ...t.schema.indexes.map(i => i.src)].join(",")]));
     const old = new Dexie(name);
@@ -24,7 +25,7 @@ describe("v34 withdrawal provenance is additive and pull-only", () => {
       await old.table("catalog_sanitario_produto_carencia_rules_v2").put({ id: "old-rule", product_id: "product", deleted_at: null });
       old.close();
       await current.open();
-      expect(current.verno).toBe(37);
+      expect(current.verno).toBe(41);
       expect(current.tables.map(table => table.name).sort()).toEqual([...Object.keys(stores), ...addedStores].sort());
       for (const table of addedStores) expect(await current.table(table).count()).toBe(0);
       expect(await current.queue_ops.toArray()).toEqual([pending]);
