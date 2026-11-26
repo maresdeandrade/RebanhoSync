@@ -66,6 +66,20 @@ import type { ReconciliationObligation } from "./reconciliationTypes";
 
 export const LOCAL_OWNERSHIP_KEY = "local-session";
 
+export interface AnimalEditDraftVersion {
+  user_id: string;
+  fazenda_id: string;
+  animal_id: string;
+  version_id: string;
+  baseline: Animal;
+  values: Record<string, unknown>;
+  submission?: { version_id: string; client_tx_id: string; client_op_id: string };
+}
+
+export interface AnimalEditDraft extends AnimalEditDraftVersion {
+  conflicts?: AnimalEditDraftVersion[];
+}
+
 export interface LocalOwnership {
   key: string;
   owner_user_id: string | null;
@@ -98,6 +112,7 @@ function isLegacyAnimalLocationUpdate(op: Operation, event: Operation) {
 
 export class OfflineDB extends Dexie {
   local_ownership!: Table<LocalOwnership, string>;
+  local_animal_edit_drafts_v2!: Table<AnimalEditDraft, [string, string, string]>;
 
   // State Stores (Cópia local para leitura)
   state_animais!: Table<Animal, string>;
@@ -913,6 +928,18 @@ export class OfflineDB extends Dexie {
       catalog_sanitario_produto_class_links_v2:
         "id, product_id, class_id, status_curatorial, deleted_at, updated_at, [product_id+class_id]",
     });
+    this.version(38).stores({
+      local_animal_edit_drafts: "[user_id+fazenda_id+animal_id], fazenda_id, submission.client_tx_id",
+    });
+    // Copy first, then replace the old key with a non-auto key that v38 writers cannot supply.
+    this.version(39).stores({
+      local_animal_edit_drafts_v2: "[user_id+fazenda_id+animal_id], fazenda_id, submission.client_tx_id",
+    }).upgrade(async tx => {
+      const drafts = await tx.table("local_animal_edit_drafts").toArray();
+      if (drafts.length) await tx.table("local_animal_edit_drafts_v2").bulkPut(drafts);
+    });
+    this.version(40).stores({ local_animal_edit_drafts: null });
+    this.version(41).stores({ local_animal_edit_drafts: "legacy_write_blocked" });
   }
 }
 

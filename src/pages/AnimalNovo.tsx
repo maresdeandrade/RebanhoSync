@@ -456,7 +456,7 @@ const AnimalNovo = () => {
         ops.splice(0, ops.length, ...built.ops);
       }
 
-      await createGesture(fazenda_id, ops);
+      await createGesture(fazenda_id, ops, { enforceAnimalIdentificationUnique: true });
       showSuccess(
         origem === "sociedade"
           ? "Animal e sociedade cadastrados localmente!"
@@ -467,6 +467,10 @@ const AnimalNovo = () => {
       navigate("/animais");
     } catch (e: unknown) {
       setIsSaving(false);
+      if (e instanceof Error && e.message === "ANIMAL_IDENTIFICATION_DUPLICATE") {
+        showError("Já existe um animal com esta identificação nesta fazenda.");
+        return;
+      }
       if (e instanceof EventValidationError) {
         showError(e.issues[0]?.message ?? "Dados invalidos para cadastro.");
         return;

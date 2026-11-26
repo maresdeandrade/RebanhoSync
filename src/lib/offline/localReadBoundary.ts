@@ -87,6 +87,8 @@ export function isTenantSensitiveReadTable(
     tableName.startsWith("event_") ||
     tableName.startsWith("ops_sanitario_") ||
     tableName === "local_sanitario_participacoes" ||
+    tableName === "local_animal_edit_drafts" ||
+    tableName === "local_animal_edit_drafts_v2" ||
     tableName === "sync_pull_cursors" ||
     tableName === "sync_reconcile_obligations" ||
     tableName.startsWith("queue_") ||
