@@ -1,5 +1,8 @@
 import type { FarmLifecycleConfig } from "@/lib/farms/lifecycleConfig";
-import { buildAnimalRegistrationRecord } from "@/lib/animals/registration";
+import {
+  buildAnimalRegistrationRecord,
+  validateAnimalRegistrationDraft,
+} from "@/lib/animals/registration";
 import {
   normalizeAnimalIdentifier,
   normalizeLookupValue,
@@ -406,6 +409,51 @@ function conflictLineResult(input: {
   };
 }
 
+function orderAnimalOperationsByGenealogy(operations: OperationInput[]) {
+  const operationsByAnimalId = new Map<string, OperationInput>();
+  for (const operation of operations) {
+    const animalId = operation.record.id;
+    if (typeof animalId === "string") {
+      operationsByAnimalId.set(animalId, operation);
+    }
+  }
+
+  const dependentOperations = new Map<OperationInput, OperationInput[]>();
+  const remainingDependencies = new Map<OperationInput, number>();
+  for (const operation of operations) {
+    const parentIds = new Set(
+      [operation.record.pai_id, operation.record.mae_id].filter(
+        (id): id is string => typeof id === "string",
+      ),
+    );
+    const parents = [...parentIds]
+      .map((parentId) => operationsByAnimalId.get(parentId))
+      .filter((parent): parent is OperationInput => Boolean(parent));
+    remainingDependencies.set(operation, parents.length);
+    for (const parent of parents) {
+      const dependents = dependentOperations.get(parent) ?? [];
+      dependents.push(operation);
+      dependentOperations.set(parent, dependents);
+    }
+  }
+
+  const ready = operations.filter(
+    (operation) => remainingDependencies.get(operation) === 0,
+  );
+  const ordered: OperationInput[] = [];
+  for (let index = 0; index < ready.length; index += 1) {
+    const parent = ready[index]!;
+    ordered.push(parent);
+    for (const dependent of dependentOperations.get(parent) ?? []) {
+      const remaining = remainingDependencies.get(dependent)! - 1;
+      remainingDependencies.set(dependent, remaining);
+      if (remaining === 0) ready.push(dependent);
+    }
+  }
+
+  return ordered.length === operations.length ? ordered : operations;
+}
+
 function finalizePreview(input: {
   base: ReturnType<typeof createBase>;
   source: ImportV2BaseInput;
@@ -440,7 +488,11 @@ function finalizePreview(input: {
   const operationResults = effectiveLineResults.filter(
     (line) => line.status === "valid" && line.operation,
   );
-  const operations = operationResults.map((line) => line.operation!);
+  const validOperations = operationResults.map((line) => line.operation!);
+  const operations =
+    input.entity === "animais"
+      ? orderAnimalOperationsByGenealogy(validOperations)
+      : validOperations;
   const chunks: ImportV2ChunkPlan[] = [];
   for (
     let offset = 0;
@@ -562,6 +614,28 @@ export function previewAnimalsImportV2(input: AnimalImportV2Input): ImportV2Prev
           "identificacao",
           "IDENTITY_EXISTS",
           `Identificação "${row.identificacao}" já existe na fazenda ativa.`,
+        ),
+      );
+    }
+    const registrationIssue = validateAnimalRegistrationDraft({
+      identificacao: row.identificacao,
+      sexo: row.sexo,
+      dataNascimento: row.dataNascimento,
+      dataEntrada: row.dataEntrada,
+    });
+    if (registrationIssue) {
+      const field = registrationIssue.startsWith("Data de entrada")
+        ? "data_entrada"
+        : "data_nascimento";
+      rowIssues.push(
+        error(
+          row.lineNumber,
+          field,
+          registrationIssue ===
+            "Data de entrada não pode anteceder a data de nascimento."
+            ? "DATE_ORDER_INVALID"
+            : "FIELD_INVALID",
+          registrationIssue,
         ),
       );
     }

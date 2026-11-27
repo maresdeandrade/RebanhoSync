@@ -364,7 +364,7 @@ const LotesImportar = () => {
               ) : (
                 <>
                   <Upload className="h-4 w-4" />
-                  Importar {preview.totalLines} lote(s)
+                  Importar {preview.summary.valid} lote(s)
                 </>
               )}
             </Button>

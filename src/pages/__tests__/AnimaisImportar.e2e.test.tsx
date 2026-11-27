@@ -14,7 +14,10 @@ import AnimaisImportar from "@/pages/AnimaisImportar";
 vi.mock("@/hooks/useAuth");
 vi.mock("@/hooks/useLotes", () => ({ useLotes: vi.fn() }));
 vi.mock("dexie-react-hooks", () => ({ useLiveQuery: vi.fn() }));
-vi.mock("@/lib/offline/ops", () => ({ createGesture: vi.fn() }));
+vi.mock("@/lib/offline/ops", () => ({
+  createGesture: vi.fn(),
+  getCreateGestureDiagnostic: vi.fn(() => undefined),
+}));
 vi.mock("@/utils/toast", () => ({ showError: vi.fn(), showSuccess: vi.fn() }));
 
 const mockNavigate = vi.fn();
@@ -86,6 +89,35 @@ describe("AnimaisImportar flow", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/animais");
   });
 
+  it("cancelar um preview válido não cria registros nem operações", async () => {
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <AnimaisImportar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/identificacao;sexo/i), {
+      target: {
+        value: ["identificacao;sexo;especie", "CANCEL-001;F;bovino"].join("\n"),
+      },
+    });
+
+    expect(
+      await screen.findByRole("button", { name: /Importar 1 animal\(is\)/i }),
+    ).toBeEnabled();
+    expect(mockedCreateGesture).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Voltar para animais" }),
+    );
+
+    expect(mockNavigate).toHaveBeenCalledWith("/animais");
+    expect(mockedCreateGesture).not.toHaveBeenCalled();
+    expect(showSuccess).not.toHaveBeenCalled();
+  });
+
   it("exibe coluna inválida e não oferece enqueue nem retry para cabeçalho malformado", async () => {
     render(
       <MemoryRouter
@@ -111,5 +143,42 @@ describe("AnimaisImportar flow", () => {
     expect(showError).not.toHaveBeenCalledWith(
       expect.stringMatching(/aguardam retry/i),
     );
+  });
+
+  it("apresenta conflito de identidade surgido após a prévia sem navegar", async () => {
+    mockedCreateGesture.mockRejectedValueOnce(
+      Object.assign(new Error("ANIMAL_IDENTIFICATION_DUPLICATE"), {
+        code: "ANIMAL_IDENTIFICATION_DUPLICATE",
+        identification: "A-001",
+      }),
+    );
+
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <AnimaisImportar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/identificacao;sexo/i), {
+      target: { value: "identificacao;sexo\nA-001;F" },
+    });
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /Importar 1 animal\(is\)/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(showError).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "1 linha(s) entraram em conflito após a prévia",
+        ),
+      );
+    });
+    expect(showSuccess).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

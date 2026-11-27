@@ -46,4 +46,14 @@ describe("animal registration date validation", () => {
       ),
     ).toBeNull();
   });
+
+  it("rejeita entrada anterior ao nascimento", () => {
+    expect(
+      validateAnimalRegistrationDraft({
+        ...draft,
+        dataNascimento: "2023-03-14",
+        dataEntrada: "2022-06-15",
+      }),
+    ).toBe("Data de entrada não pode anteceder a data de nascimento.");
+  });
 });
