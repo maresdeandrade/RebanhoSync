@@ -76,8 +76,20 @@ describe("AnimalEditar delete handler", () => {
     vi.clearAllMocks();
     await db.state_animais.clear();
     await db.state_animais.put(animal);
+    await db.local_ownership.put({
+      key: "local-session",
+      owner_user_id: "test-user",
+      updated_at: "now",
+    });
     vi.mocked(useAuth).mockReturnValue({
       role: "owner",
+      user: { id: "test-user" },
+      activeFarmId: farmId,
+      localOwnership: {
+        status: "OWNED",
+        ownerUserId: "test-user",
+        currentUserId: "test-user",
+      },
       farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
     } as ReturnType<typeof useAuth>);
     vi.mocked(useLotes).mockReturnValue([]);
@@ -94,6 +106,7 @@ describe("AnimalEditar delete handler", () => {
     cleanup();
     vi.restoreAllMocks();
     await db.state_animais.clear();
+    await db.local_ownership.delete("local-session");
   });
 
   it("confirma, cria DELETE de animais e remove a projecao operacional", async () => {
@@ -106,7 +119,7 @@ describe("AnimalEditar delete handler", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("tab", { name: "Campo" }));
+    await user.click(await screen.findByRole("tab", { name: "Campo" }));
     await user.click(
       screen.getByRole("button", { name: "Excluir animal permanentemente" }),
     );
