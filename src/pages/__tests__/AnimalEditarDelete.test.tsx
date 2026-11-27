@@ -34,6 +34,7 @@ vi.mock("react-router-dom", async () => {
 
 const farmId = "10000000-0000-4000-8000-000000000001";
 const animalId = "20000000-0000-4000-8000-000000000001";
+const userId = "test-user";
 
 function makeAnimal(): Animal {
   const timestamp = "2026-08-23T12:00:00.000Z";
@@ -75,8 +76,22 @@ describe("AnimalEditar delete handler", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await db.state_animais.clear();
+    await db.local_animal_edit_drafts_v2.clear();
+    await db.local_ownership.clear();
     await db.state_animais.put(animal);
+    await db.local_ownership.put({
+      key: "local-session",
+      owner_user_id: userId,
+      updated_at: "now",
+    });
     vi.mocked(useAuth).mockReturnValue({
+      activeFarmId: farmId,
+      user: { id: userId },
+      localOwnership: {
+        status: "OWNED",
+        ownerUserId: userId,
+        currentUserId: userId,
+      },
       role: "owner",
       farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
     } as ReturnType<typeof useAuth>);
@@ -94,6 +109,8 @@ describe("AnimalEditar delete handler", () => {
     cleanup();
     vi.restoreAllMocks();
     await db.state_animais.clear();
+    await db.local_animal_edit_drafts_v2.clear();
+    await db.local_ownership.clear();
   });
 
   it("confirma, cria DELETE de animais e remove a projecao operacional", async () => {
@@ -106,7 +123,7 @@ describe("AnimalEditar delete handler", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("tab", { name: "Campo" }));
+    await user.click(await screen.findByRole("tab", { name: "Campo" }));
     await user.click(
       screen.getByRole("button", { name: "Excluir animal permanentemente" }),
     );
