@@ -1,10 +1,12 @@
 import { MobileFormActions } from "@/components/layout/MobileFormActions";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/offline/db";
+import { db, type AnimalEditDraftVersion } from "@/lib/offline/db";
+import { draftVersions, packDraftVersions, updateDraftVersion } from "@/lib/offline/animalEditDrafts";
 import { createGesture } from "@/lib/offline/ops";
 import type {
+  Animal,
   DestinoProdutivoAnimalEnum,
   OperationInput,
   StatusReprodutivoMachoEnum,
@@ -55,8 +57,20 @@ import { useAuth } from "@/hooks/useAuth";
 const AnimalEditar = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { farmLifecycleConfig, role } = useAuth();
+  const { farmLifecycleConfig, role, user, activeFarmId, localOwnership } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const editBaseline = useRef<Animal | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftPresent, setDraftPresent] = useState(false);
+  const [draftChoices, setDraftChoices] = useState<AnimalEditDraftVersion[]>([]);
+  const draftWrites = useRef<Promise<void>>(Promise.resolve());
+  const draftVersion = useRef<string | null>(null);
+  const draftHeads = useRef(new Map<string, string | null>());
+  const draftContext = useRef("");
+  const loadedContext = useRef("");
+  const lastDraftValues = useRef<string | null>(null);
+  const contextKey = `${user?.id ?? ""}:${activeFarmId ?? ""}:${id ?? ""}`;
+  draftContext.current = contextKey;
 
   // Carregar animal
   const animal = useLiveQuery(
@@ -106,6 +120,22 @@ const AnimalEditar = () => {
     "null" | "true" | "false"
   >("null");
   const lotes = useLotes(animal?.fazenda_id);
+
+  const applyDraftValues = (draft: AnimalEditDraftVersion) => {
+    const v = draft.values as Record<string, string>;
+    lastDraftValues.current = JSON.stringify(draft.values);
+    editBaseline.current = draft.baseline;
+    draftHeads.current.set(contextKey, draft.version_id);
+    draftVersion.current = draft.version_id;
+    setIdentificacao(v.identificacao); setSexo(v.sexo as "M" | "F"); setLoteId(v.loteId);
+    setEspecie(v.especie as AnimalSpeciesEnum | "null"); setDataNascimento(v.dataNascimento); setDataEntrada(v.dataEntrada);
+    setPaiId(v.paiId); setMaeId(v.maeId); setNome(v.nome); setRfid(v.rfid);
+    setOrigem(v.origem as typeof origem); setRaca(v.raca);
+    setDestinoProdutivo(v.destinoProdutivo as typeof destinoProdutivo);
+    setStatusReprodutivoMacho(v.statusReprodutivoMacho as typeof statusReprodutivoMacho);
+    setCastrado(v.castrado as typeof castrado); setPuberdadeConfirmada(v.puberdadeConfirmada as typeof puberdadeConfirmada);
+    setEmLactacao(v.emLactacao as typeof emLactacao); setSecagemRealizada(v.secagemRealizada as typeof secagemRealizada);
+  };
 
   const temCriaRecente =
     useLiveQuery(async () => {
@@ -165,7 +195,25 @@ const AnimalEditar = () => {
 
   // Preencher formulário quando animal carregar
   useEffect(() => {
-    if (animal) {
+    editBaseline.current = null;
+    loadedContext.current = "";
+    lastDraftValues.current = null;
+    draftVersion.current = null;
+    setDraftReady(false);
+    setDraftPresent(false);
+    setDraftChoices([]);
+  }, [contextKey]);
+
+  useEffect(() => {
+    if (animal && user && activeFarmId === animal.fazenda_id && localOwnership?.status === "OWNED" && editBaseline.current?.id !== animal.id) {
+      let cancelled = false;
+      const load = async () => {
+      const draft = await db.local_animal_edit_drafts_v2.get([user.id, activeFarmId, animal.id]);
+      if (cancelled || draftContext.current !== contextKey) return;
+      const baseline = draft?.baseline ?? animal;
+      draftHeads.current.set(contextKey, draft?.version_id ?? null);
+      editBaseline.current = baseline;
+      loadedContext.current = contextKey;
       setIdentificacao(animal.identificacao ?? "");
       setSexo(animal.sexo);
       setLoteId(animal.lote_id ?? "null");
@@ -211,8 +259,57 @@ const AnimalEditar = () => {
             ? "true"
             : "false",
       );
+      if (draft) {
+        applyDraftValues(draft);
+        setDraftChoices(draftVersions(draft));
+        setDraftPresent(true);
+      }
+      setDraftReady(true);
+      };
+      void load().catch(() => showError("Não foi possível carregar o rascunho local."));
+      return () => { cancelled = true; };
     }
-  }, [animal]);
+  }, [animal, user, activeFarmId, localOwnership?.status, contextKey]);
+
+  const draftValues = { identificacao, sexo, loteId, especie, dataNascimento, dataEntrada,
+    paiId, maeId, nome, rfid, origem, raca, destinoProdutivo, statusReprodutivoMacho,
+    castrado, puberdadeConfirmada, emLactacao, secagemRealizada };
+  const serializedDraftValues = JSON.stringify(draftValues);
+
+  const persistDraft = (values: typeof draftValues) => {
+    const owner = user?.id;
+    const farm = activeFarmId;
+    const baseline = editBaseline.current;
+    const context = contextKey;
+    if (!owner || !farm || !id || !baseline || baseline.fazenda_id !== farm || loadedContext.current !== context) {
+      return Promise.reject(new Error("ANIMAL_DRAFT_CONTEXT_CHANGED"));
+    }
+    const version = crypto.randomUUID();
+    const write = draftWrites.current.catch(() => undefined).then(async () => {
+      const next = await db.transaction("rw", [db.local_animal_edit_drafts_v2, db.local_ownership], async () => {
+        const ownership = await db.local_ownership.get("local-session");
+        if (ownership?.owner_user_id !== owner) throw new Error("ANIMAL_DRAFT_CONTEXT_CHANGED");
+        const key: [string, string, string] = [owner, farm, id];
+        const previous = await db.local_animal_edit_drafts_v2.get(key);
+        const next = updateDraftVersion(previous, draftHeads.current.get(context), { user_id: owner, fazenda_id: farm, animal_id: id,
+          version_id: version, baseline, values });
+        await db.local_animal_edit_drafts_v2.put(next);
+        return next;
+      });
+      draftHeads.current.set(context, version);
+      if (draftContext.current === context) { draftVersion.current = version; setDraftPresent(true); setDraftChoices(draftVersions(next)); }
+    });
+    draftWrites.current = write;
+    return write;
+  };
+
+  useEffect(() => {
+    if (!draftReady || loadedContext.current !== contextKey) return;
+    if (lastDraftValues.current === null) { lastDraftValues.current = serializedDraftValues; return; }
+    if (lastDraftValues.current === serializedDraftValues) return;
+    lastDraftValues.current = serializedDraftValues;
+    void persistDraft(draftValues).catch(() => showError("Não foi possível preservar o rascunho local."));
+  }, [serializedDraftValues, draftReady, contextKey]);
 
   // Combobox Options Mapping
   const especieOptions = [
@@ -423,11 +520,36 @@ const AnimalEditar = () => {
     });
 
     try {
-      await createGesture(animal.fazenda_id, ops);
+      await persistDraft(draftValues);
+      if (!user || !activeFarmId || !draftVersion.current) throw new Error("ANIMAL_DRAFT_CONTEXT_CHANGED");
+      const versions = draftVersions(await db.local_animal_edit_drafts_v2.get([user.id, activeFarmId, id]));
+      const savedDraft = versions.find(item => item.version_id === draftVersion.current);
+      if (!savedDraft) throw new Error("ANIMAL_DRAFT_CHANGED");
+      if (versions.length > 1 && !window.confirm("Há versões diferentes deste rascunho. Enviar somente a versão exibida? As demais continuarão guardadas para revisão.")) return;
+      if (savedDraft.baseline.revision !== editBaseline.current?.revision) throw new Error("ANIMAL_EDIT_STALE");
+      const expectedContext = contextKey;
+      await createGesture(animal.fazenda_id, ops, {
+        animalEditBaseline: savedDraft.baseline,
+        animalDraftSubmission: { userId: user.id, farmId: activeFarmId, animalId: id, versionId: draftVersion.current,
+          confirmedVersions: versions.map(item => item.version_id) },
+        validateContext: () => { if (draftContext.current !== expectedContext) throw new Error("ANIMAL_DRAFT_CONTEXT_CHANGED"); },
+      });
       showSuccess("Animal atualizado localmente!");
       navigate(`/animais/${id}`);
     } catch (e: unknown) {
       setIsSaving(false);
+      if (e instanceof Error && e.message === "ANIMAL_REVISION_PENDING") {
+        showError("Aguarde a confirmação do cadastro e tente salvar novamente. Seus dados permanecem neste formulário.");
+        return;
+      }
+      if (e instanceof Error && e.message === "ANIMAL_EDIT_STALE") {
+        showError("O animal mudou desde a abertura. Seus dados permanecem no formulário; confira-os antes de recarregar.");
+        return;
+      }
+      if (e instanceof Error && ["ANIMAL_DRAFT_CHANGED", "ANIMAL_DRAFT_CONFLICT_CHANGED", "ANIMAL_DRAFT_SUBMISSION_PENDING"].includes(e.message)) {
+        showError("As versões do rascunho mudaram ou já aguardam sincronização. Revise-as antes de tentar novamente.");
+        return;
+      }
       if (e instanceof EventValidationError) {
         showError(e.issues[0]?.message ?? "Dados invalidos para movimentacao.");
         return;
@@ -436,6 +558,86 @@ const AnimalEditar = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const leaveWithDraft = async () => {
+    try { await draftWrites.current; navigate(`/animais/${id}`); }
+    catch { showError("Não foi possível preservar o rascunho local."); }
+  };
+
+  const reviewDraft = async (versionId: string) => {
+    if (!user || !activeFarmId || !id) return;
+    setIsSaving(true);
+    try {
+      await draftWrites.current;
+      const versions = draftVersions(await db.local_animal_edit_drafts_v2.get([user.id, activeFarmId, id]));
+      const selected = versions.find(item => item.version_id === versionId);
+      if (!selected || draftContext.current !== contextKey) throw new Error("ANIMAL_DRAFT_CHANGED");
+      setDraftChoices(versions);
+      applyDraftValues(selected);
+    } catch { showError("Não foi possível abrir esta versão. Revise os rascunhos novamente."); }
+    finally { setIsSaving(false); }
+  };
+
+  const adoptCurrentBaseline = async () => {
+    if (!user || !activeFarmId || !id || !window.confirm("Confira todos os campos desta versão e o cadastro atual. Usar a revisão atual como base desta edição? Nenhuma versão será mesclada ou enviada agora.")) return;
+    setIsSaving(true);
+    try {
+      await persistDraft(draftValues);
+      const expectedVersion = draftVersion.current;
+      const nextVersion = crypto.randomUUID();
+      const context = contextKey;
+      const updated = await db.transaction("rw", [db.local_animal_edit_drafts_v2, db.local_ownership, db.state_animais, db.queue_ops, db.queue_rejections], async () => {
+        const owner = await db.local_ownership.get("local-session");
+        const key: [string, string, string] = [user.id, activeFarmId, id];
+        const versions = draftVersions(await db.local_animal_edit_drafts_v2.get(key));
+        const selected = versions.find(item => item.version_id === expectedVersion);
+        const current = await db.state_animais.get(id);
+        const pending = await db.queue_ops.filter(op => op.table === "animais" && op.record.id === id && op.record.fazenda_id === activeFarmId && op.sync_state !== "REJECTED").first();
+        const submission = selected?.submission;
+        const rejectedOperation = submission ? await db.queue_ops.get(submission.client_op_id) : undefined;
+        const rejection = submission ? await db.queue_rejections.where("client_tx_id").equals(submission.client_tx_id)
+          .filter(item => item.client_op_id === submission.client_op_id && item.fazenda_id === activeFarmId && item.table === "animais").first() : undefined;
+        const terminalRejection = rejectedOperation?.sync_state === "REJECTED" && Boolean(rejection);
+        if (owner?.owner_user_id !== user.id || draftContext.current !== context || !selected || (submission && !terminalRejection) || pending ||
+            !current || current.fazenda_id !== activeFarmId || !Number.isSafeInteger(current.revision) || Number(current.revision) < 1) {
+          throw new Error("ANIMAL_DRAFT_BASE_UNAVAILABLE");
+        }
+        selected.version_id = nextVersion;
+        selected.baseline = current;
+        selected.submission = undefined;
+        const packed = packDraftVersions(versions)!;
+        await db.local_animal_edit_drafts_v2.put(packed);
+        return { selected, versions };
+      });
+      draftHeads.current.set(context, nextVersion);
+      draftVersion.current = nextVersion;
+      editBaseline.current = updated.selected.baseline;
+      setDraftChoices(updated.versions);
+      showSuccess("Revisão atual escolhida. Confira os campos antes de salvar.");
+    } catch {
+      showError("Não foi possível usar a revisão atual. Verifique se há operações pendentes e tente novamente.");
+    } finally { setIsSaving(false); }
+  };
+
+  const discardDraft = async () => {
+    if (!user || !activeFarmId || !id || !window.confirm("Descartar as alterações locais deste rascunho?")) return;
+    try {
+      await draftWrites.current;
+      const version = draftVersion.current;
+      await db.transaction("rw", [db.local_animal_edit_drafts_v2, db.local_ownership], async () => {
+        const owner = await db.local_ownership.get("local-session");
+        if (owner?.owner_user_id !== user.id || draftContext.current !== contextKey) throw new Error("ANIMAL_DRAFT_CONTEXT_CHANGED");
+        const key: [string, string, string] = [user.id, activeFarmId, id];
+        const draft = await db.local_animal_edit_drafts_v2.get(key);
+        const versions = draftVersions(draft);
+        if (!versions.some(item => item.version_id === version)) throw new Error("ANIMAL_DRAFT_CHANGED");
+        const remaining = packDraftVersions(versions.filter(item => item.version_id !== version));
+        if (remaining) await db.local_animal_edit_drafts_v2.put(remaining);
+        else await db.local_animal_edit_drafts_v2.delete(key);
+      });
+      navigate(`/animais/${id}`);
+    } catch { showError("Não foi possível descartar o rascunho."); }
   };
 
   const handleDelete = async () => {
@@ -470,7 +672,7 @@ const AnimalEditar = () => {
     }
   };
 
-  if (!animal) {
+  if (!animal || !draftReady || localOwnership?.status !== "OWNED" || animal.fazenda_id !== activeFarmId || loadedContext.current !== contextKey) {
     return (
       <div className="space-y-5 pb-16">
         <PageIntro
@@ -514,7 +716,7 @@ const AnimalEditar = () => {
           <>
             <Button
               variant="outline"
-              onClick={() => navigate(`/animais/${id}`)}
+              onClick={leaveWithDraft}
               disabled={isSaving}
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
@@ -532,6 +734,13 @@ const AnimalEditar = () => {
         }
       />
 
+      {draftPresent && <div role="status">Rascunho local com alterações não sincronizadas. <Button type="button" variant="outline" onClick={discardDraft} disabled={isSaving}>Descartar rascunho</Button>
+        <a href={`/animais/${id}`} target="_blank" rel="noreferrer">Consultar cadastro atual</a>{" "}
+        <Button type="button" variant="outline" onClick={adoptCurrentBaseline} disabled={isSaving}>Usar revisão atual como base</Button>
+      </div>}
+      {draftChoices.length > 1 && <div role="alert"><p>Há {draftChoices.length} versões de rascunho para este animal. Revise cada versão; salvar enviará somente a versão exibida.</p>
+        {draftChoices.map((choice, index) => <Button key={choice.version_id} type="button" variant="outline" aria-pressed={choice.version_id === draftVersion.current} disabled={isSaving} onClick={() => void reviewDraft(choice.version_id)}>Revisar versão {index + 1}</Button>)}
+      </div>}
       <Tabs defaultValue="basic" className="w-full space-y-4">
         <TabsList className="grid w-full grid-cols-3 h-12 rounded-xl mb-6 bg-muted/60 p-1">
           <TabsTrigger value="basic" className="rounded-lg py-2 text-sm font-semibold">Geral</TabsTrigger>
@@ -1031,7 +1240,7 @@ const AnimalEditar = () => {
         <Button
           variant="outline"
           className="h-14 flex-1 text-base rounded-xl"
-          onClick={() => navigate(`/animais/${id}`)}
+          onClick={leaveWithDraft}
           disabled={isSaving}
         >
           Cancelar

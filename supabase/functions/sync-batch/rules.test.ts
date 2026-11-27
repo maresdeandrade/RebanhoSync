@@ -186,6 +186,14 @@ describe("sync-batch rules: normalizeDbError", () => {
     });
   });
 
+  it("rejeita colisão de identificação animal sem tratá-la como replay", () => {
+    const result = normalizeDbError(
+      { code: "23505", message: 'duplicate key value violates unique constraint "uq_animais_identificacao_active"' },
+      op({ table: "animais", action: "INSERT", record: { id: "animal-distinto", identificacao: "BR-001" } }),
+    );
+    expect(result).toMatchObject({ status: "REJECTED", reason_code: "OPERATION_IDENTITY_CONFLICT" });
+  });
+
   it("não trata colisão de estoque como replay sem identidade persistida", () => {
     const result = normalizeDbError(
       {

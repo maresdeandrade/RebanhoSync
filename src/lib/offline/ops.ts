@@ -3,7 +3,9 @@ import { db } from "./db";
 import { getClientId } from "./clientIdentity";
 export { getClientId } from "./clientIdentity";
 import { prepareMovementIntents } from "./movement";
+import { draftVersions, packDraftVersions } from "./animalEditDrafts";
 import type {
+  Animal,
   Gesture,
   InsumoLote,
   Operation,
@@ -21,8 +23,8 @@ import {
   assertValidAnimalTaxonomyFactsContract,
   readTaxonomyFactsRecord,
 } from "@/lib/animals/taxonomyFactsContract";
-import { buildCommercialPurchaseQueueOperation } from "@/lib/comercial/animalPurchaseSync";
-import { buildCommercialOperationQueueOperation } from "@/lib/comercial/commercialOperationSync";
+import { buildCommercialPurchaseQueueOperation, getPendingCommercialPurchaseRecords } from "@/lib/comercial/animalPurchaseSync";
+import { buildCommercialOperationQueueOperation, getPendingCommercialOperationRecords } from "@/lib/comercial/commercialOperationSync";
 
 export type CreateGestureDiagnostic = {
   stage: string;
@@ -156,6 +158,9 @@ function assertAllowedOfflinePushSurface(op: OperationInput) {
 
 type CreateGestureOptions = {
   validateContext?: () => void;
+  enforceAnimalIdentificationUnique?: boolean;
+  animalEditBaseline?: Animal;
+  animalDraftSubmission?: { userId: string; farmId: string; animalId: string; versionId: string; confirmedVersions?: string[] };
   sanitarioAgendaV2?: readonly SanitarioAgendaCreateDraftV2[];
   enqueueSanitarioAgendaV2?: boolean;
   deathConsequences?: { animalId: string; eventId: string };
@@ -264,6 +269,73 @@ function sanitaryGestureStores(hasAgendas: boolean, hasDeathConsequences: boolea
   return hasAgendas || hasDeathConsequences
     ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
     : [];
+}
+
+async function assertUniqueAnimalIdentifications(fazendaId: string, ops: Operation[]) {
+  const identifications = ops
+    .filter((op) => op.table === "animais" && op.action === "INSERT")
+    .map((op) => op.record.identificacao)
+    .filter((value): value is string => typeof value === "string");
+  if (new Set(identifications).size !== identifications.length) {
+    throw new Error("ANIMAL_IDENTIFICATION_DUPLICATE");
+  }
+  const animals = await db.state_animais.where("fazenda_id").equals(fazendaId).toArray();
+  const queued = await db.queue_ops.toArray();
+  for (const identification of identifications) {
+    if (animals.some((animal) => animal.identificacao === identification)) {
+      throw new Error("ANIMAL_IDENTIFICATION_DUPLICATE");
+    }
+    for (const op of queued) {
+      if (op.action !== "INSERT") continue;
+      const pendingAnimals = op.table === "animais"
+        ? [op.record]
+        : op.record.operation_type === "venda"
+          ? []
+          : [...getPendingCommercialOperationRecords(op), ...getPendingCommercialPurchaseRecords(op)]
+              .filter((entry) => entry.table === "animais")
+              .map((entry) => entry.record);
+      if (!pendingAnimals.some((record) => record.fazenda_id === fazendaId && record.identificacao === identification)) continue;
+      const gesture = await db.queue_gestures.get(op.client_tx_id);
+      if (gesture && !["DONE", "REJECTED"].includes(gesture.status)) {
+        throw new Error("ANIMAL_IDENTIFICATION_DUPLICATE");
+      }
+    }
+  }
+}
+
+const animalEditFields = [
+  "id", "fazenda_id", "identificacao", "sexo", "status", "lote_id", "especie",
+  "data_nascimento", "data_entrada", "pai_id", "mae_id", "nome", "rfid",
+  "origem", "raca", "papel_macho", "habilitado_monta", "payload", "deleted_at",
+] as const;
+
+function canonicalAnimalValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalAnimalValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, item]) => [key, canonicalAnimalValue(item)]));
+  }
+  return value ?? null;
+}
+
+async function assertAnimalEditBaseline(fazendaId: string, baseline: Animal, ops: Operation[]) {
+  const updates = ops.filter((op) => op.table === "animais" && op.action === "UPDATE");
+  if (updates.length !== 1 || updates[0].record.id !== baseline.id || baseline.fazenda_id !== fazendaId) {
+    throw new Error("ANIMAL_EDIT_STALE");
+  }
+  const current = await db.state_animais.get(baseline.id);
+  if (!current || current.fazenda_id !== fazendaId) throw new Error("ANIMAL_EDIT_STALE");
+  if (!Number.isSafeInteger(current.revision) || Number(current.revision) < 1) {
+    throw new Error("ANIMAL_REVISION_PENDING");
+  }
+  const changed = animalEditFields.some((field) =>
+    JSON.stringify(canonicalAnimalValue(current[field])) !== JSON.stringify(canonicalAnimalValue(baseline[field])),
+  );
+  if (changed || (Number(baseline.revision) > 0
+    ? baseline.revision !== current.revision
+    : current.revision !== 1)) {
+    throw new Error("ANIMAL_EDIT_STALE");
+  }
 }
 
 export const createGesture = async (
@@ -484,6 +556,7 @@ export const createGesture = async (
       [
         db.queue_gestures,
         db.queue_ops,
+        ...(options.animalDraftSubmission ? [db.local_animal_edit_drafts_v2, db.local_ownership] : []),
         ...deathRejectionStores(ops),
         ...getAffectedStores(ops),
         ...getInventoryFarmContextStores(ops_input),
@@ -494,6 +567,30 @@ export const createGesture = async (
         transactionStage = "write-gesture";
         await movement?.verify();
         await assertInventoryFarmContext(fazenda_id, ops_input);
+        if (options.enforceAnimalIdentificationUnique) {
+          await assertUniqueAnimalIdentifications(fazenda_id, ops);
+        }
+        if (options.animalEditBaseline) {
+          await assertAnimalEditBaseline(fazenda_id, options.animalEditBaseline, ops);
+        }
+        if (options.animalDraftSubmission) {
+          const draftRef = options.animalDraftSubmission;
+          const matching = queueOps.filter(op => op.table === "animais" && op.action === "UPDATE" && op.record.id === draftRef.animalId);
+          const owner = await db.local_ownership.get("local-session");
+          const draft = await db.local_animal_edit_drafts_v2.get([draftRef.userId, draftRef.farmId, draftRef.animalId]);
+          const versions = draftVersions(draft);
+          const selected = versions.find(item => item.version_id === draftRef.versionId);
+          const confirmed = [...(draftRef.confirmedVersions ?? [])].sort();
+          const actual = versions.map(item => item.version_id).sort();
+          if (versions.length > 1 && JSON.stringify(actual) !== JSON.stringify(confirmed)) throw new Error("ANIMAL_DRAFT_CONFLICT_CHANGED");
+          if (draftRef.farmId !== fazenda_id || owner?.owner_user_id !== draftRef.userId || matching.length !== 1 || !selected ||
+              !options.animalEditBaseline || JSON.stringify(canonicalAnimalValue(selected.baseline)) !== JSON.stringify(canonicalAnimalValue(options.animalEditBaseline))) {
+            throw new Error("ANIMAL_DRAFT_CHANGED");
+          }
+          if (selected.submission) throw new Error("ANIMAL_DRAFT_SUBMISSION_PENDING");
+          selected.submission = { version_id: selected.version_id, client_tx_id, client_op_id: matching[0].client_op_id };
+          await db.local_animal_edit_drafts_v2.put(packDraftVersions(versions)!);
+        }
         if (ops_input.some(op => ["sanitary_protocol_adoption_v1", "sanitary_strategic_calendar_v1"].includes(String(op.record.domain)))) {
           const pending = await db.queue_ops.filter(op =>
             ops_input.some(input => input.record.domain === op.record?.domain && ["sanitary_protocol_adoption_v1", "sanitary_strategic_calendar_v1"].includes(String(input.record.domain))) &&
