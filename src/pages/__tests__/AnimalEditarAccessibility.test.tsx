@@ -16,7 +16,10 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/hooks/useLotes", () => ({ useLotes: () => [] }));
 vi.mock("dexie-react-hooks", () => ({ useLiveQuery: vi.fn() }));
 vi.mock("@/lib/offline/db", () => ({
-  db: { state_animais: { get: vi.fn(), put: vi.fn(), update: vi.fn() } },
+  db: {
+    state_animais: { get: vi.fn(), put: vi.fn(), update: vi.fn() },
+    local_animal_edit_drafts_v2: { get: vi.fn().mockResolvedValue(undefined) },
+  },
 }));
 vi.mock("@/lib/offline/ops", () => ({ createGesture: vi.fn() }));
 vi.mock("@/utils/toast", () => ({ showSuccess: vi.fn(), showError: vi.fn() }));
@@ -30,6 +33,8 @@ const animal = {
   rfid: "RFID-001",
   payload: {},
 };
+const userId = "test-user";
+const farmId = "farm-1";
 function page() {
   return (
     <MemoryRouter
@@ -48,6 +53,13 @@ describe("acessibilidade do scanner RFID simulado", () => {
     vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue({
       role: "owner",
+      user: { id: userId },
+      activeFarmId: farmId,
+      localOwnership: {
+        status: "OWNED",
+        ownerUserId: userId,
+        currentUserId: userId,
+      },
       farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
     } as ReturnType<typeof useAuth>);
     vi.mocked(useLiveQuery).mockImplementation(((query) => {
@@ -61,7 +73,7 @@ describe("acessibilidade do scanner RFID simulado", () => {
   it("tem nome acessivel descritivo e preserva a simulacao ao clicar", async () => {
     const user = userEvent.setup();
     render(page());
-    const scanner = screen.getByRole("button", {
+    const scanner = await screen.findByRole("button", {
       name: "Simular leitura de RFID do animal",
     });
     expect(scanner).toHaveAttribute("type", "button");
@@ -79,7 +91,7 @@ describe("acessibilidade do scanner RFID simulado", () => {
   it("recebe foco apos o campo RFID e funciona com Enter e Espaco sem salvar", async () => {
     const user = userEvent.setup();
     render(page());
-    const field = screen.getByLabelText("RFID");
+    const field = await screen.findByLabelText("RFID");
     field.focus();
     await user.tab();
     expect(
