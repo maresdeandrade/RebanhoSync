@@ -307,6 +307,12 @@ preview determinístico
 
 Animais, lotes e pastos não criam Evento durante importação cadastral. IDs de gesture/op são determinísticos por fazenda, importação, chunk e linha. Falha de um chunk não desfaz chunks aplicados; retry reutiliza identidade.
 
+A Importação V2 processa progenitores antes das crias para satisfazer dependências genealógicas.
+A reconciliação de rejeição corresponde à operação exata da importação, mantendo a rejeição
+original separada de uma aplicação posterior de outra operação sobre o mesmo animal.
+A unicidade normalizada é protegida localmente por transação e `fazenda_id`; a constraint
+remota exata não foi ampliada e não certifica colisões normalizadas concorrentes entre dispositivos.
+
 ## 19. Operações bulk
 
 Contrato obrigatório do bulk:

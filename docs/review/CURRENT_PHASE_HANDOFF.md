@@ -1,6 +1,6 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-11-21
+Atualizado em: 2026-11-27
 
 Status: **Fase 24 ativa; #303 integrada; #304 integrada e publicada; frente produto–classe encerrada; produto em desenvolvimento, sem homologação operacional ampla declarada**
 Próxima fase: **Fase 24 — mantida; nenhuma próxima frente definida nesta consolidação documental.** Implementação, curadoria e publicação produto–classe encerradas; sem nova fase ou certificação automática.
@@ -23,6 +23,34 @@ Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+
+## J07 — Importação coletiva — 27/11/2026
+
+A [PR #312](https://github.com/maresdeandrade/RebanhoSync/pull/312) está aberta na
+branch `codex/j07-collective-import`. Baseline da jornada:
+`8c26f61c3edc8d40a7f4ea569eabe619a1962379`; entrega J07:
+`88eadbd841cefc06f087bceb6a7e5ed13d8c05ed`; correção da fixture:
+`2d85fea61a1463b6a4e20a09439388aa4817856f`.
+
+Fatos confirmados:
+
+- importação genealógica ordena progenitores antes das crias antes da formação dos chunks;
+- unicidade normalizada possui proteção transacional local por `fazenda_id`;
+- rejeições são reconciliadas pela operação exata — fazenda, gesto e identificador da operação —
+  mantendo a auditoria da rejeição original;
+- importação parcial preserva chunks já aplicados e usa identidade determinística em retry/replay;
+- origem cadastral `compra` não cria Evento comercial artificial;
+- a Fazenda Horizonte terminou a jornada sintética com 31 animais, quatro lotes e quatro pastos,
+  totalizando 100 hectares.
+
+A validação local executou 51 testes J07 e, após o bloqueio da CI, a correção da fixture
+passou em 15 testes diretamente relacionados (15/15 em dois arquivos). O novo HEAD passou
+`Required validation`, `Fill PR description` e teve `mergeStateStatus = CLEAN`.
+
+Ressalvas não bloqueantes da fase: colisões normalizadas concorrentes entre dispositivos não
+foram certificadas remotamente; cold start totalmente offline não passou porque o app shell
+não estava disponível sem rede. PWA, service worker, migrations, RLS, RPC e sync-batch não
+foram alterados. A pendência de cold start pertence à J29. Não houve merge ou J08.
 
 ## Integração J04 e Bloco 1 — 21/11/2026
 
