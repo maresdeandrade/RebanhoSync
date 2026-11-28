@@ -50,7 +50,11 @@ describe("sync health views", () => {
   });
 
   it.each([
-    [{}, "Em dia"],
+    [{}, "Sem confirmação"],
+    [
+      { lastCompletedAt: "2026-10-07T10:00:00Z", lastCompletedStage: "synced" },
+      "Em dia",
+    ],
     [{ errorCount: 1 }, "Erro de sincronização"],
     [{ reconcileCount: 1 }, "Reconciliação pendente"],
     [{ syncingCount: 1 }, "Sincronizando"],
@@ -97,11 +101,11 @@ describe("sync health views", () => {
     expect(
       screen.getByRole("button", { name: "Verificando sincronização" }),
     ).toBeVisible();
-    await screen.findByRole("button", { name: "Em dia" });
+    await screen.findByRole("button", { name: "Sem confirmação" });
     activeFarmId = "farm-a";
     rerender(ui());
     expect(
-      screen.queryByRole("button", { name: "Em dia" }),
+      screen.queryByRole("button", { name: "Sem confirmação" }),
     ).not.toBeInTheDocument();
     await screen.findByRole("button", { name: "Erro de sincronização" });
   });
@@ -113,7 +117,7 @@ describe("sync health views", () => {
       </MemoryRouter>
     );
     const { rerender } = render(ui());
-    await screen.findByRole("button", { name: "Em dia" });
+    await screen.findByRole("button", { name: "Sem confirmação" });
     await act(async () => {
       await db.sync_reconcile_obligations.put({
         key: "farm-a:factual",
@@ -130,18 +134,20 @@ describe("sync health views", () => {
     expect(
       screen.getByRole("button", { name: "Verificando sincronização" }),
     ).toBeVisible();
-    await screen.findByRole("button", { name: "Em dia" });
+    await screen.findByRole("button", { name: "Sem confirmação" });
     activeFarmId = "farm-a";
     rerender(ui());
     expect(
-      screen.queryByRole("button", { name: "Em dia" }),
+      screen.queryByRole("button", { name: "Sem confirmação" }),
     ).not.toBeInTheDocument();
     await screen.findByRole("button", { name: "Reconciliação pendente" });
     await act(async () => {
       await db.sync_reconcile_obligations.delete("farm-a:factual");
     });
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Em dia" })).toBeVisible(),
+      expect(
+        screen.getByRole("button", { name: "Sem confirmação" }),
+      ).toBeVisible(),
     );
   });
 });

@@ -1,6 +1,6 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-11-21
+Atualizado em: 2026-11-27
 Baseline integrada confirmada: `main@157376d90b3f3ac6ccfe806d98f1de37b2007644` (#305; documentação da entrega #304). #303 e #304 integradas; a publicação produto–classe tem evidência própria. J04/Bloco 1 são o pacote local posterior, ainda não integrado.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
 Próxima fase de desenvolvimento: **Fase 24 — mantida; nenhuma próxima frente definida nesta consolidação documental.** Implementação, curadoria e publicação produto–classe encerradas; sem nova fase ou certificação automática.
@@ -29,6 +29,8 @@ com fila heterogênea foram certificados. Kill real de processo/browser permanec
 O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é a referência arquitetural canônica dos fluxos operacionais. Código e migrations ativas mantêm precedência factual; os resumos deste `PROJECT_STATUS.md` registram estado e contexto, mas não redefinem contratos do mapa.
 
 ## Estado atual
+
+**P2-01–P2-05 — revisão pré-merge, 27/11/2026:** o [PR #311](https://github.com/maresdeandrade/RebanhoSync/pull/311) permanece aberto contra `main@8c26f61c`, no head `4afad9ea`. No head consultado, `Required validation` e `Fill PR description` passaram. A falha de teste herdada em `AnimalEditarDelete.test.tsx` foi corrigida no fixture de autenticação/ownership e na espera pelo carregamento assíncrono; o teste focal passou (1/1), assim como ESLint focal e `git diff --check`. A ausência de E2E integrado que gere `ERROR` pela fila permanece uma limitação explícita; não foi feita nova reprodução de falha. Esta entrega ainda não está integrada: o commit documental subsequente requer novo CI e aprovação de merge.
 
 **Preparação de integração — 21/11/2026:** a main remota foi confirmada em `157376d9`,
 sem divergência de commits com a baseline da worktree J04. Código, migrations e testes

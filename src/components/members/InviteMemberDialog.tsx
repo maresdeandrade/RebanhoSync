@@ -199,16 +199,16 @@ export const InviteMemberDialog = ({
                     </SelectTrigger>
                     <SelectContent>
                       {callerRole === "owner" ? (
-                        <SelectItem value="owner">Owner</SelectItem>
+                        <SelectItem value="owner">Proprietário</SelectItem>
                       ) : null}
-                      <SelectItem value="manager">Manager</SelectItem>
-                      <SelectItem value="cowboy">Cowboy</SelectItem>
+                      <SelectItem value="manager">Gerente</SelectItem>
+                      <SelectItem value="cowboy">Operador</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <StatusBadge tone="neutral">{role}</StatusBadge>
+                  <StatusBadge tone="neutral">{role === "owner" ? "Proprietário" : role === "manager" ? "Gerente" : "Operador"}</StatusBadge>
                   <StatusBadge tone="info">Expira em 7 dias</StatusBadge>
                 </div>
               </div>
@@ -220,6 +220,9 @@ export const InviteMemberDialog = ({
             actions={<StatusBadge tone="success">Link gerado</StatusBadge>}
             contentClassName="space-y-4"
           >
+            <p role="status" className="text-sm text-muted-foreground">
+              O link foi gerado, mas nenhuma mensagem foi enviada. Copie e compartilhe-o com a pessoa convidada.
+            </p>
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <Label htmlFor="invite-link">Link do convite</Label>
               <div className="mt-2 flex gap-2">

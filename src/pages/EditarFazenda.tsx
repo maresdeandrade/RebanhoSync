@@ -103,6 +103,8 @@ export default function EditarFazenda() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const baseline = useRef<{
     farmId: string;
     form: FarmFormState;
@@ -240,10 +242,13 @@ export default function EditarFazenda() {
 
     if (!activeFarmId) return;
     if (!form.nome.trim()) {
-      setError("Nome da fazenda e obrigatorio.");
+      const message = "Nome da fazenda é obrigatório.";
+      setNameError(message);
+      nameInputRef.current?.focus();
       return;
     }
 
+    setNameError(null);
     setIsSaving(true);
     setError(null);
 
@@ -328,15 +333,15 @@ export default function EditarFazenda() {
           <>
             <StatusBadge tone="neutral">Fazenda ativa</StatusBadge>
             <StatusBadge tone="neutral">
-              Papel: {role === "owner" ? "Proprietario" : role === "manager" ? "Gerente" : "não carregado"}
+              Papel: {role === "owner" ? "Proprietário" : role === "manager" ? "Gerente" : "não carregado"}
             </StatusBadge>
             <StatusBadge tone="neutral">
               {essentialModeEnabled ? "Modo essencial" : "Modo completo"}
             </StatusBadge>
             <StatusBadge tone={canManageRolloutFlags ? "info" : "neutral"}>
               {canManageRolloutFlags
-                ? "Rollout editavel"
-                : "Rollout somente owner"}
+                ? "Proprietário pode ajustar rollout"
+                : "Rollout: somente leitura"}
             </StatusBadge>
           </>
         }
@@ -361,19 +366,27 @@ export default function EditarFazenda() {
         <FormSection title="Dados da fazenda">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="farm-name">Nome da fazenda</Label>
+              <Label htmlFor="farm-name">Nome da fazenda (obrigatório)</Label>
               <Input
                 id="farm-name"
+                ref={nameInputRef}
                 className="h-12 rounded-xl bg-background"
                 value={form.nome}
-                onChange={(event) => updateField("nome", event.target.value)}
+                onChange={(event) => {
+                  updateField("nome", event.target.value);
+                  if (nameError) setNameError(null);
+                }}
                 placeholder="Ex.: Fazenda Santa Clara"
                 disabled={isSaving}
+                aria-required="true"
+                aria-invalid={Boolean(nameError)}
+                aria-describedby={nameError ? "farm-name-error" : undefined}
               />
+              {nameError ? <p id="farm-name-error" role="alert" className="text-sm text-destructive">{nameError}</p> : null}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="farm-code">Codigo interno</Label>
+              <Label htmlFor="farm-code">Codigo interno (opcional)</Label>
               <Input
                 id="farm-code"
                 className="h-12 rounded-xl bg-background"
@@ -385,7 +398,7 @@ export default function EditarFazenda() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="farm-cep">CEP</Label>
+              <Label htmlFor="farm-cep">CEP (opcional)</Label>
               <Input
                 id="farm-cep"
                 className="h-12 rounded-xl bg-background"
@@ -404,7 +417,7 @@ export default function EditarFazenda() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="farm-city">Municipio</Label>
+              <Label htmlFor="farm-city">Municipio (opcional)</Label>
               <Input
                 id="farm-city"
                 className="h-12 rounded-xl bg-background"
@@ -418,7 +431,7 @@ export default function EditarFazenda() {
             </div>
 
             <div className="space-y-2">
-              <Label>Estado</Label>
+              <Label>Estado (opcional)</Label>
               <Select
                 value={form.estado || "none"}
                 onValueChange={(value) =>
@@ -445,7 +458,7 @@ export default function EditarFazenda() {
         <FormSection title="Perfil produtivo">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="farm-area">Area total (ha)</Label>
+              <Label htmlFor="farm-area">Area total (ha, opcional)</Label>
               <Input
                 id="farm-area"
                 type="number"
@@ -462,7 +475,7 @@ export default function EditarFazenda() {
             </div>
 
             <div className="space-y-2">
-              <Label>Tipo de producao</Label>
+              <Label>Tipo de producao (opcional)</Label>
               <div className="grid grid-cols-4 gap-2">
                 {[
                   { value: "", label: "N/I" },
@@ -493,7 +506,7 @@ export default function EditarFazenda() {
             </div>
 
             <div className="space-y-2">
-              <Label>Sistema de manejo</Label>
+              <Label>Sistema de manejo (opcional)</Label>
               <div className="grid grid-cols-4 gap-2">
                 {[
                   { value: "", label: "N/I" },
@@ -539,6 +552,7 @@ export default function EditarFazenda() {
                 <Label htmlFor="farm-essential-mode" className="text-sm font-medium">
                   Modo essencial
                 </Label>
+                <p className="text-sm text-muted-foreground">Organiza o nível de detalhe e as áreas exibidas na navegação; não altera o papel nem substitui as permissões do sistema.</p>
               </div>
               <Switch
                 id="farm-essential-mode"
@@ -554,7 +568,7 @@ export default function EditarFazenda() {
           title="Seguranca dos registros"
           actions={
             <StatusBadge tone={canManageRolloutFlags ? "info" : "neutral"}>
-              {canManageRolloutFlags ? "Owner pode ajustar" : "Somente leitura"}
+              {canManageRolloutFlags ? "Proprietário pode ajustar" : "Somente leitura"}
             </StatusBadge>
           }
         >
@@ -615,4 +629,3 @@ export default function EditarFazenda() {
     </div>
   );
 }
-

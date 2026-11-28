@@ -13,15 +13,15 @@ export const RoleBadge = ({ role }: RoleBadgeProps) => {
     { label: string; className: string }
   > = {
     owner: {
-      label: "Owner",
+      label: "Proprietário",
       className: "border-destructive/20 bg-destructive/5 text-destructive",
     },
     manager: {
-      label: "Manager",
+      label: "Gerente",
       className: "border-info/20 bg-info-muted text-info",
     },
     cowboy: {
-      label: "Cowboy",
+      label: "Operador",
       className: "border-border/70 bg-muted/40 text-foreground/80",
     },
   };

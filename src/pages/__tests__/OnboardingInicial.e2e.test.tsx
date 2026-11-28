@@ -32,11 +32,8 @@ describe("OnboardingInicial wizard", () => {
     } as ReturnType<typeof useAuth>);
 
     mockedUseLiveQuery.mockReturnValue({
-      pastos: 1,
-      lotes: 0,
-      animais: 0,
-      protocolos: 0,
-      eventos: 0,
+      status: "ready",
+      counts: { pastos: 1, lotes: 0, animais: 0, protocolos: 0, eventos: 0 },
     } as ReturnType<typeof useLiveQuery>);
 
     maybeSingle.mockResolvedValue({
@@ -70,6 +67,22 @@ describe("OnboardingInicial wizard", () => {
     expect(screen.getByText(/Municipio.*opciona/i)).toBeInTheDocument();
   });
 
+  it("não apresenta zero registros enquanto a consulta local ainda carrega", () => {
+    mockedUseLiveQuery.mockReturnValue(undefined as ReturnType<typeof useLiveQuery>);
+    maybeSingle.mockReturnValue(new Promise(() => {}));
+    render(<MemoryRouter><OnboardingInicial /></MemoryRouter>);
+    expect(screen.getByText(/Carregando dados locais/i)).toBeInTheDocument();
+    expect(screen.queryByText(/0 animal\(is\) cadastrados/i)).not.toBeInTheDocument();
+  });
+
+  it("apresenta falha de leitura separada de uma fazenda sem registros", () => {
+    mockedUseLiveQuery.mockReturnValue({status:"error"} as ReturnType<typeof useLiveQuery>);
+    maybeSingle.mockReturnValue(new Promise(() => {}));
+    render(<MemoryRouter><OnboardingInicial /></MemoryRouter>);
+    expect(screen.getByRole("alert")).toHaveTextContent(/Não foi possível carregar os dados locais/i);
+    expect(screen.queryByText(/0 animal\(is\) cadastrados/i)).not.toBeInTheDocument();
+  });
+
   it("foca a primeira etapa pendente e permite navegar pelo wizard", async () => {
     render(
       <MemoryRouter
@@ -84,6 +97,7 @@ describe("OnboardingInicial wizard", () => {
         name: /Implantacao guiada da fazenda/i,
       }),
     ).toBeInTheDocument();
+    expect(screen.getByText(/Contagens e progresso usam os dados locais deste dispositivo/i)).toBeInTheDocument();
 
     expect(screen.getByText(/Proxima recomendacao:/i)).toBeInTheDocument();
     await waitFor(
@@ -112,4 +126,3 @@ describe("OnboardingInicial wizard", () => {
     expect(screen.getAllByText(/0 animal\(is\) cadastrados/i).length).toBeGreaterThan(0);
   });
 });
-
