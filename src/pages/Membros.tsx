@@ -44,6 +44,13 @@ import { RoleBadge } from "@/components/members/RoleBadge";
 type Role = "owner" | "manager" | "cowboy";
 type MemberStatus = "active" | "pending" | "inactive";
 
+function formatAcceptedAt(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
+
 interface Member {
   user_id: string;
   fazenda_id: string;
@@ -71,6 +78,8 @@ function getStatusTone(status: MemberStatus) {
 function FarmMembers() {
   const { activeFarmId, role: userRole } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
+  const [farmIdentity, setFarmIdentity] = useState<{ nome: string | null; codigo: string | null } | null>(null);
+  const [farmIdentityLoaded, setFarmIdentityLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [inviteRevision, setInviteRevision] = useState(0);
@@ -81,6 +90,33 @@ function FarmMembers() {
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [removingMember, setRemovingMember] = useState<Member | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    let current = true;
+    const loadFarmIdentity = async () => {
+      setFarmIdentityLoaded(false);
+      setFarmIdentity(null);
+      if (!activeFarmId) {
+        setFarmIdentityLoaded(true);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from("fazendas")
+          .select("nome, codigo")
+          .eq("id", activeFarmId)
+          .maybeSingle();
+        if (error) throw error;
+        if (current) setFarmIdentity(data ?? null);
+      } catch {
+        if (current) setFarmIdentity(null);
+      } finally {
+        if (current) setFarmIdentityLoaded(true);
+      }
+    };
+    void loadFarmIdentity();
+    return () => { current = false; };
+  }, [activeFarmId]);
 
   const role: Role =
     userRole === "owner" || userRole === "manager" || userRole === "cowboy"
@@ -249,6 +285,13 @@ function FarmMembers() {
         title="Pessoas e convites da fazenda"
         meta={
           <>
+            <StatusBadge tone={farmIdentityLoaded && farmIdentity ? "neutral" : "warning"}>
+              {farmIdentityLoaded
+                ? farmIdentity
+                  ? `${farmIdentity.nome || "Fazenda ativa"}${farmIdentity.codigo ? ` · Código ${farmIdentity.codigo}` : ""}`
+                  : "Identificação da fazenda indisponível"
+                : "Carregando fazenda ativa"}
+            </StatusBadge>
             {!isLoading && !loadError && <>
               <StatusBadge tone="neutral">{counts.total} pessoa(s)</StatusBadge>
               <StatusBadge tone="success">{counts.active} ativa(s)</StatusBadge>
@@ -374,6 +417,9 @@ function FarmMembers() {
                             <PhoneIcon className="h-3.5 w-3.5" />
                             {member.phone}
                           </span>
+                        ) : null}
+                        {member.accepted_at && formatAcceptedAt(member.accepted_at) ? (
+                          <span>Ingresso: {formatAcceptedAt(member.accepted_at)}</span>
                         ) : null}
                       </div>
                     </div>
@@ -504,5 +550,4 @@ export default function Membros() {
   // A farm switch never reuses a previous farm's rows or pending requests.
   return <FarmMembers key={activeFarmId ?? "none"} />;
 }
-
 

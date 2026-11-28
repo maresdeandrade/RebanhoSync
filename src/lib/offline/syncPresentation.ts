@@ -6,7 +6,8 @@ export type SyncStage =
   | "synced"
   | "synced_altered"
   | "rejected"
-  | "error";
+  | "error"
+  | "unknown";
 
 export type SyncTone = "neutral" | "info" | "success" | "warning" | "danger";
 
@@ -42,6 +43,7 @@ export function getFarmSyncHealth(summary?: FarmSyncSummary): {
     | "syncing"
     | "pending"
     | "altered"
+    | "unknown"
     | "healthy";
 } {
   if (!summary)
@@ -70,13 +72,17 @@ export function getFarmSyncHealth(summary?: FarmSyncSummary): {
       label: "Confirmado com ajuste",
       stage: "altered",
     };
+  if (!summary.lastCompletedAt || !summary.lastCompletedStage)
+    return { tone: "info", label: "Sem confirmação", stage: "unknown" };
+  if (summary.lastCompletedStage !== "synced")
+    return { tone: "info", label: "Sem confirmação", stage: "unknown" };
   return { tone: "success", label: "Em dia", stage: "healthy" };
 }
 
 export function getGestureSyncStage(
   gesture?: Pick<Gesture, "status" | "sync_result"> | null,
 ): SyncStage {
-  if (!gesture) return "synced";
+  if (!gesture) return "unknown";
 
   if (gesture.status === "REJECTED" || gesture.sync_result === "REJECTED") {
     return "rejected";
@@ -98,7 +104,11 @@ export function getGestureSyncStage(
     return "synced_altered";
   }
 
-  return "synced";
+  if (gesture.status === "SYNCED" || gesture.sync_result === "APPLIED") {
+    return "synced";
+  }
+
+  return "unknown";
 }
 
 export function getSyncStageLabel(stage: SyncStage): string {
@@ -115,6 +125,8 @@ export function getSyncStageLabel(stage: SyncStage): string {
       return "Rejeitado";
     case "error":
       return "Erro de sync";
+    case "unknown":
+      return "Confirmação desconhecida";
   }
 }
 
@@ -130,6 +142,8 @@ export function getSyncStageTone(stage: SyncStage): SyncTone {
     case "rejected":
     case "error":
       return "danger";
+    case "unknown":
+      return "info";
   }
 }
 

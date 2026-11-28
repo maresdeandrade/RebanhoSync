@@ -30,8 +30,10 @@ stale foi fechado em 05/10/2026 conforme a [evidência canônica](../context/PRO
 Em 27/11/2026, a J07 foi encerrada tecnicamente na [PR #312](https://github.com/maresdeandrade/RebanhoSync/pull/312),
 na branch `codex/j07-collective-import`. A entrega corrigiu integridade genealógica,
 unicidade local, reconciliação por operação exata e contagem elegível de lotes. O estado
-sintético preservado é 31 animais, quatro lotes e quatro pastos na Fazenda Horizonte.
-CI obrigatória passou no HEAD `2d85fea61a1463b6a4e20a09439388aa4817856f`; não houve merge.
+O estado sintético preservado é 31 animais, quatro lotes e quatro pastos na Fazenda Horizonte.
+CI obrigatória passou no HEAD `2d85fea61a1463b6a4e20a09439388aa4817856f`. A branch recebeu
+localmente `origin/main` em `e49be5722e36c9379c3d4b00c43f4021d9864ea2e4` para resolver os
+conflitos; o HEAD combinado requer nova CI e a PR #312 não foi integrada.
 
 Limites preservados: unicidade normalizada remota não certificada, cold start offline não
 aprovado e UX não bloqueante fora da consolidação posterior. J29 permanece responsável pela

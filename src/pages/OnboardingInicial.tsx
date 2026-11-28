@@ -55,10 +55,15 @@ const EMPTY_SNAPSHOT = {
   eventos: 0,
 };
 
+type SnapshotState =
+  | { status: "ready"; counts: typeof EMPTY_SNAPSHOT }
+  | { status: "error" };
+
 const OnboardingInicial = () => {
   const { activeFarmId } = useAuth();
   const [farm, setFarm] = useState<FarmSummary | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState(0);
+  const [snapshotRetry, setSnapshotRetry] = useState(0);
 
   useEffect(() => {
     const loadFarm = async () => {
@@ -80,31 +85,35 @@ const OnboardingInicial = () => {
     loadFarm();
   }, [activeFarmId]);
 
-  const snapshot = useLiveQuery(async () => {
+  const snapshot = useLiveQuery(async (): Promise<SnapshotState | null> => {
     if (!activeFarmId) return null;
 
-    const [pastos, lotes, animais, protocolos, eventos] = await Promise.all([
-      db.state_pastos.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_protocolos_sanitarios
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .toArray(),
-      db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
-    ]);
+    try {
+      const [pastos, lotes, animais, protocolos, eventos] = await Promise.all([
+        db.state_pastos.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_protocolos_sanitarios
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .toArray(),
+        db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
+      ]);
 
-    return {
-      pastos: pastos.filter((item) => !item.deleted_at).length,
-      lotes: lotes.filter((item) => !item.deleted_at).length,
-      animais: animais.filter((item) => !item.deleted_at).length,
-      protocolos: protocolos.filter((item) => !item.deleted_at && item.ativo)
-        .length,
-      eventos: eventos.filter((item) => !item.deleted_at).length,
-    };
-  }, [activeFarmId]);
+      return { status: "ready", counts: {
+        pastos: pastos.filter((item) => !item.deleted_at).length,
+        lotes: lotes.filter((item) => !item.deleted_at).length,
+        animais: animais.filter((item) => !item.deleted_at).length,
+        protocolos: protocolos.filter((item) => !item.deleted_at && item.ativo)
+          .length,
+        eventos: eventos.filter((item) => !item.deleted_at).length,
+      } };
+    } catch {
+      return { status: "error" };
+    }
+  }, [activeFarmId, snapshotRetry]);
 
-  const counts = snapshot ?? EMPTY_SNAPSHOT;
+  const counts = snapshot?.status === "ready" ? snapshot.counts : EMPTY_SNAPSHOT;
 
   const steps = useMemo<OnboardingStep[]>(() => {
     const localizacao =
@@ -326,6 +335,14 @@ const OnboardingInicial = () => {
     );
   }
 
+  if (snapshot === undefined) {
+    return <Card role="status"><CardContent className="py-10 text-sm text-muted-foreground">Carregando dados locais da fazenda…</CardContent></Card>;
+  }
+
+  if (snapshot?.status === "error") {
+    return <Card role="alert"><CardHeader><CardTitle>Não foi possível carregar os dados locais</CardTitle></CardHeader><CardContent className="space-y-3"><p className="text-sm text-muted-foreground">As etapas não serão marcadas como vazias. Tente carregar novamente.</p><Button onClick={() => setSnapshotRetry((value) => value + 1)}>Tentar novamente</Button></CardContent></Card>;
+  }
+
   return (
     <div className="space-y-5">
       <section className="rounded-xl border bg-card p-6 shadow-sm">
@@ -336,6 +353,9 @@ const OnboardingInicial = () => {
               <h1 className="text-3xl font-bold tracking-tight">
                 Implantacao guiada da fazenda
               </h1>
+              <p className="text-sm text-muted-foreground">
+                Contagens e progresso usam os dados locais deste dispositivo; não confirmam que o estado remoto esteja completo ou sincronizado.
+              </p>
             </div>
           </div>
 
@@ -543,5 +563,3 @@ const OnboardingInicial = () => {
 };
 
 export default OnboardingInicial;
-
-

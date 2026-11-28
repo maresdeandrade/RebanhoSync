@@ -15,6 +15,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   invites = [];
   from.mockImplementation((table: string) => ({ select: (fields: string) => {
+    if (table === "fazendas") return { eq: (_column: string, farmId: string) => ({ maybeSingle: async () => ({ data: farmId === "farm-a" ? { nome: "Horizonte", codigo: "HZ-01" } : null, error: null }) }) };
     if (table === "user_fazendas") return { eq: async () => fields.includes("!")
       ? { data: null, error: { message: "relationship not found" } }
       : { data: [owner], error: null } };
@@ -48,6 +49,9 @@ afterEach(cleanup);
 it("mostra o proprietário sem perfil complementar, sem exigir uma FK inexistente", async () => {
   render(<Membros />);
   expect(await screen.findByText("owner@example.test")).toBeInTheDocument();
+  expect(await screen.findByText("Horizonte · Código HZ-01")).toBeInTheDocument();
+  expect(screen.getByText("Ingresso: 20/11/2026")).toBeInTheDocument();
+  expect(screen.getByText("Proprietário")).toBeInTheDocument();
   expect(screen.getByText("1 pessoa(s)")).toBeInTheDocument();
   expect(screen.queryByText("Nenhum membro neste recorte")).not.toBeInTheDocument();
 });

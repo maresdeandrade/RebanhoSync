@@ -44,13 +44,16 @@ Fatos confirmados:
   totalizando 100 hectares.
 
 A validação local executou 51 testes J07 e, após o bloqueio da CI, a correção da fixture
-passou em 15 testes diretamente relacionados (15/15 em dois arquivos). O novo HEAD passou
-`Required validation`, `Fill PR description` e teve `mergeStateStatus = CLEAN`.
+passou em 15 testes diretamente relacionados (15/15 em dois arquivos). O HEAD
+`2d85fea61a1463b6a4e20a09439388aa4817856f` passou `Required validation`; a branch recebeu
+localmente `origin/main` em `e49be5722e36c9379c3d4b00c43f4021d9864ea2e4` para resolver
+conflitos, portanto o HEAD combinado precisa de nova CI após publicação.
 
 Ressalvas não bloqueantes da fase: colisões normalizadas concorrentes entre dispositivos não
 foram certificadas remotamente; cold start totalmente offline não passou porque o app shell
 não estava disponível sem rede. PWA, service worker, migrations, RLS, RPC e sync-batch não
-foram alterados. A pendência de cold start pertence à J29. Não houve merge ou J08.
+foram alterados. A pendência de cold start pertence à J29. Não houve merge da PR #312 ou
+início da J08.
 
 Em paralelo, a [PR #311](https://github.com/maresdeandrade/RebanhoSync/pull/311),
 `fix: clarify farm setup and synchronization status`, foi integrada pelo merge

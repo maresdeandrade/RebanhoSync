@@ -25,7 +25,14 @@ function makeGesture(overrides: Partial<Gesture> = {}): Gesture {
 
 describe("syncPresentation", () => {
   it.each([
-    [{}, "healthy", "Em dia"],
+    [
+      {
+        lastCompletedAt: "2026-04-06T12:00:00.000Z",
+        lastCompletedStage: "synced" as const,
+      },
+      "healthy",
+      "Em dia",
+    ],
     [{ errorCount: 1 }, "error", "Erro de sincronização"],
     [{ reconcileCount: 1 }, "reconcile", "Reconciliação pendente"],
     [{ syncingCount: 1 }, "syncing", "Sincronizando"],
@@ -63,6 +70,28 @@ describe("syncPresentation", () => {
       "checking",
     );
     expect(getFarmSyncHealth(undefined).stage).toBe("checking");
+  });
+  it("keeps an empty loaded summary and a missing gesture unconfirmed", () => {
+    expect(getFarmSyncHealth(EMPTY_FARM_SYNC_SUMMARY)).toMatchObject({
+      stage: "unknown",
+      label: "Sem confirmação",
+    });
+    expect(getGestureSyncStage(null)).toBe("unknown");
+    expect(
+      getGestureSyncStage(
+        makeGesture({
+          status: "DONE",
+          completed_at: "2026-04-06T12:00:00.000Z",
+        }),
+      ),
+    ).toBe("unknown");
+    expect(
+      getFarmSyncHealth({
+        ...EMPTY_FARM_SYNC_SUMMARY,
+        lastCompletedAt: "2026-04-06T12:00:00.000Z",
+        lastCompletedStage: "unknown",
+      }),
+    ).toMatchObject({ stage: "unknown", label: "Sem confirmação" });
   });
   it("maps local and server states to explicit sync stages", () => {
     expect(getGestureSyncStage(makeGesture({ status: "PENDING" }))).toBe(

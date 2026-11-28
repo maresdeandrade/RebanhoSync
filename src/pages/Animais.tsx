@@ -418,6 +418,7 @@ export default function Animais() {
   const [calendarAnchorFilter, setCalendarAnchorFilter] =
     useState<AnimalCalendarAnchorFilter>(calendarAnchorFromQuery);
   const [page, setPage] = useState(1);
+  const [animalReadRetry, setAnimalReadRetry] = useState(0);
   const debouncedSearch = useDebouncedValue(search, 300);
   const lotes = useLotes();
 
@@ -622,7 +623,8 @@ export default function Animais() {
     return map;
   }, [animaisFamilia]);
 
-  const animais = useLiveQuery(async () => {
+  const animalReadResult = useLiveQuery(async () => {
+    try {
     let collection: Collection<Animal, string>;
     let statusHandledByIndex = false;
 
@@ -664,8 +666,13 @@ export default function Animais() {
       );
     }
 
-    return await collection.toArray();
-  }, [activeFarmId, debouncedSearch, loteFilter, sexoFilter, statusFilter]);
+      return { status: "ready" as const, animals: await collection.toArray() };
+    } catch {
+      return { status: "error" as const };
+    }
+  }, [activeFarmId, animalReadRetry, debouncedSearch, loteFilter, sexoFilter, statusFilter]);
+  const animais = animalReadResult?.status === "ready" ? animalReadResult.animals : undefined;
+  const animalReadFailed = animalReadResult?.status === "error";
 
   const taxonomyByAnimal = useMemo(() => {
     const reproContextMap = buildAnimalTaxonomyReproContextMap(
@@ -772,6 +779,7 @@ export default function Animais() {
   const isFilteredDataLoading =
     (isAgendaLoading && (calendarModeFilter !== "all" || calendarAnchorFilter !== "all")) ||
     (isRegulatoryLoading && (regulatoryImpactFilter !== "all" || regulatorySubareaFilter !== "all"));
+  const isEmptyStateLoading = isFilteredDataLoading || animaisFamilia === undefined;
 
   useEffect(() => {
     setPage(1);
@@ -964,14 +972,22 @@ export default function Animais() {
           }
         />
 
-        <div role="status" aria-live="polite" className="space-y-3">
-          <p className="text-sm text-muted-foreground">Carregando animais...</p>
-          <div aria-hidden="true" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 3 }, (_, index) => (
-              <Skeleton key={index} className="h-64 rounded-xl" />
-            ))}
+        {animalReadFailed ? (
+          <div role="alert" className="space-y-3 rounded-xl border p-5">
+            <p className="font-medium">Não foi possível carregar os animais locais.</p>
+            <p className="text-sm text-muted-foreground">A falha de leitura não indica que a fazenda esteja sem animais.</p>
+            <Button variant="outline" onClick={() => setAnimalReadRetry((value) => value + 1)}>Tentar novamente</Button>
           </div>
-        </div>
+        ) : (
+          <div role="status" aria-live="polite" className="space-y-3">
+            <p className="text-sm text-muted-foreground">Carregando animais...</p>
+            <div aria-hidden="true" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 3 }, (_, index) => (
+                <Skeleton key={index} className="h-64 rounded-xl" />
+              ))}
+            </div>
+          </div>
+        )}
       </PageContainer>
     );
   }
@@ -1536,20 +1552,24 @@ export default function Animais() {
                 role="status"
                 aria-live="polite"
                 className="min-h-60 md:col-span-2 xl:col-span-3"
-                title={isFilteredDataLoading
+                title={isEmptyStateLoading
                   ? "Carregando dados do recorte"
                   : debouncedSearch
                   ? "Nenhum animal encontrado na busca"
                   : hasFilters
                     ? "Nenhum animal no recorte atual"
-                    : "Nenhum animal ativo neste recorte"}
-                description={isFilteredDataLoading
+                    : (animaisFamilia?.length ?? 0) === 0
+                      ? "Nenhum animal local cadastrado para esta fazenda"
+                      : "Nenhum animal ativo neste recorte"}
+                description={isEmptyStateLoading
                   ? "Aguarde a leitura da agenda e das restrições usadas pelos filtros."
                   : debouncedSearch
                   ? "Revise a identificação buscada ou os filtros aplicados."
                   : hasFilters
                     ? "Revise os filtros para consultar outro recorte do rebanho."
-                    : "O recorte padrão mostra animais ativos. Use os filtros para consultar outros status."}
+                    : (animaisFamilia?.length ?? 0) === 0
+                      ? "Não há registros de animais carregados neste dispositivo para a fazenda ativa. Isso não confirma a ausência de registros remotos. Você pode cadastrar um animal ou importar uma planilha."
+                      : "O recorte padrão mostra animais ativos. Use os filtros para consultar outros status."}
               />
             ) : null}
           </div>

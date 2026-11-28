@@ -32,7 +32,7 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é 
 
 **J07 — Validação da Importação V2 — 27/11/2026:** a entrega está na PR
 [#312](https://github.com/maresdeandrade/RebanhoSync/pull/312), na branch
-`codex/j07-collective-import`, com HEAD `2d85fea61a1463b6a4e20a09439388aa4817856f`.
+`codex/j07-collective-import`.
 O commit J07 `88eadbd841cefc06f087bceb6a7e5ed13d8c05ed` corrigiu ordenação genealógica,
 unicidade local normalizada, reconciliação por operação exata e contagem elegível de lotes.
 A reprodução sintética preservou os registros válidos anteriores e confirmou 31 animais,
@@ -46,13 +46,26 @@ No mesmo período, a [PR #311](https://github.com/maresdeandrade/RebanhoSync/pul
 de configuração da fazenda e sincronização; não faz parte do patch J07 nem altera
 gênese, migrations, RLS, RPC ou sync-batch da Importação V2.
 
-Os testes focados J07 e a correção pontual posterior passaram em 51 + 15 recortes
-especificamente aplicáveis; `git diff --check` passou e a CI obrigatória passou no novo HEAD.
+Os testes focados J07 e a correção pontual posterior passaram em 51 + 15 testes
+especificamente aplicáveis; `git diff --check` passou e a CI obrigatória passou no HEAD
+`2d85fea61a1463b6a4e20a09439388aa4817856f`. A branch recebeu localmente a main que inclui
+a #311; o novo HEAD combinado ainda precisa de CI após publicação.
 A proteção de unicidade normalizada permanece local/transacional e escopada por
 `fazenda_id`; colisões normalizadas concorrentes entre dispositivos não têm garantia
 remota demonstrada. Cold start totalmente offline não passou: o app shell não estava
 disponível sem rede, por isso PWA/service worker não foram implementados e a limitação
-fica para J29. Não houve merge, deploy, mudança remota de migrations/RLS/RPC ou início da J08.
+fica para J29. A PR #312 permanece aberta e não integrada; somente a main foi mesclada
+localmente à branch para resolver os conflitos. Não houve deploy, mudança remota de
+migrations/RLS/RPC ou início da J08.
+
+**P2-01–P2-05 — revisão pré-merge, 27/11/2026:** a [PR #311](https://github.com/maresdeandrade/RebanhoSync/pull/311)
+foi integrada em `main` pelo merge `e49be5722e36c9379c3d4b00c43f4021d9864ea2e4`.
+No head da revisão `4afad9ea`, `Required validation` e `Fill PR description` passaram.
+A fixture do teste `AnimalEditarDelete.test.tsx` passou a fornecer contexto de autenticação
+e ownership e aguardar a inicialização assíncrona; o teste focal passou (1/1), assim como
+ESLint focal e `git diff --check`. A ausência de E2E integrado que gere `ERROR` pela fila
+permanece uma limitação explícita; não houve nova reprodução desse cenário. Essa evidência
+pertence ao escopo P2/#311, não certifica a fila como um todo e não amplia a validação J07.
 
 **Preparação de integração — 21/11/2026:** a main remota foi confirmada em `157376d9`,
 sem divergência de commits com a baseline da worktree J04. Código, migrations e testes

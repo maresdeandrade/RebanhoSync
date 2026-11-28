@@ -76,8 +76,8 @@ describe("AnimalEditar delete handler", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await db.state_animais.clear();
-    await db.local_animal_edit_drafts_v2.clear();
-    await db.local_ownership.clear();
+    await db.local_animal_edit_drafts_v2.delete([userId, farmId, animalId]);
+    await db.local_ownership.delete("local-session");
     await db.state_animais.put(animal);
     await db.local_ownership.put({
       key: "local-session",
@@ -85,14 +85,14 @@ describe("AnimalEditar delete handler", () => {
       updated_at: "now",
     });
     vi.mocked(useAuth).mockReturnValue({
-      activeFarmId: farmId,
+      role: "owner",
       user: { id: userId },
+      activeFarmId: farmId,
       localOwnership: {
         status: "OWNED",
         ownerUserId: userId,
         currentUserId: userId,
       },
-      role: "owner",
       farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
     } as ReturnType<typeof useAuth>);
     vi.mocked(useLotes).mockReturnValue([]);
@@ -109,8 +109,8 @@ describe("AnimalEditar delete handler", () => {
     cleanup();
     vi.restoreAllMocks();
     await db.state_animais.clear();
-    await db.local_animal_edit_drafts_v2.clear();
-    await db.local_ownership.clear();
+    await db.local_animal_edit_drafts_v2.delete([userId, farmId, animalId]);
+    await db.local_ownership.delete("local-session");
   });
 
   it("confirma, cria DELETE de animais e remove a projecao operacional", async () => {
