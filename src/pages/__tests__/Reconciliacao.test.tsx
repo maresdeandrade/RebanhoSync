@@ -10,6 +10,7 @@ import Reconciliacao from "@/pages/Reconciliacao";
 import { getRejectionStats, listRejections } from "@/lib/offline/rejections";
 import { retryRejectedOperation } from "@/lib/offline/ops";
 import { db } from "@/lib/offline/db";
+import type { Gesture } from "@/lib/offline/types";
 
 vi.mock("@/hooks/useAuth");
 vi.mock("dexie-react-hooks", () => ({
@@ -57,6 +58,9 @@ vi.mock("@/lib/offline/db", () => ({
           ]),
         })),
       })),
+    },
+    queue_gestures: {
+      bulkGet: vi.fn().mockResolvedValue([]),
     },
   },
 }));
@@ -188,21 +192,178 @@ describe("Reconciliacao page", () => {
     );
     expect(mockedListRejections).toHaveBeenCalled();
   });
+
+  it("marca a rejeição como histórica quando a mesma operação foi aplicada depois", async () => {
+    mockedListRejections.mockResolvedValue({
+      items: [
+        {
+          id: "rej-applied",
+          fazenda_id: "farm-1",
+          client_tx_id: "tx-1",
+          client_op_id: "op-1",
+          table: "animais",
+          action: "INSERT",
+          reason_code: "FOREIGN_KEY_VIOLATION",
+          reason_message: "Referência pai ainda não sincronizada.",
+          created_at: "2026-04-07T10:00:00.000Z",
+        },
+      ],
+      nextCursor: undefined,
+    });
+    vi.mocked(db.queue_ops.where).mockReturnValueOnce({
+      anyOf: () => ({ toArray: async () => [] }),
+    } as never);
+    vi.mocked(db.queue_gestures.bulkGet).mockResolvedValueOnce([
+      {
+        client_tx_id: "tx-1",
+        fazenda_id: "farm-1",
+        client_id: "client-1",
+        status: "DONE",
+        sync_result: "APPLIED",
+        created_at: "2026-04-07T10:01:00.000Z",
+        operation_results: [
+          {
+            op_id: "op-1",
+            status: "APPLIED",
+            matched: true,
+            recorded_at: "2026-04-07T10:01:00.000Z",
+          },
+        ],
+      } satisfies Gesture,
+    ]);
+
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Reconciliacao />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Aplicada após reenvio"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Operação aplicada em uma sincronização posterior; a rejeição original permanece apenas como histórico.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("1 resolvida(s) após sincronização"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Re-enfileirar" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("não resolve rejeição quando outra operação do gesto foi aplicada", async () => {
+    mockedListRejections.mockResolvedValue({
+      items: [
+        {
+          id: "rej-other-op",
+          fazenda_id: "farm-1",
+          client_tx_id: "tx-1",
+          client_op_id: "op-1",
+          table: "animais",
+          action: "INSERT",
+          reason_code: "FOREIGN_KEY_VIOLATION",
+          reason_message: "Referência pai ainda não sincronizada.",
+          created_at: "2026-04-07T10:00:00.000Z",
+        },
+      ],
+      nextCursor: undefined,
+    });
+    vi.mocked(db.queue_gestures.bulkGet).mockResolvedValueOnce([
+      {
+        client_tx_id: "tx-1",
+        fazenda_id: "farm-1",
+        client_id: "client-1",
+        status: "DONE",
+        sync_result: "APPLIED",
+        created_at: "2026-04-07T10:01:00.000Z",
+        operation_results: [
+          {
+            op_id: "op-1",
+            client_op_id: "op-other",
+            status: "APPLIED",
+            matched: false,
+            recorded_at: "2026-04-07T10:01:00.000Z",
+          },
+          {
+            op_id: "op-2",
+            client_op_id: "op-2",
+            status: "APPLIED",
+            matched: true,
+            recorded_at: "2026-04-07T10:01:00.000Z",
+          },
+        ],
+      } satisfies Gesture,
+    ]);
+
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Reconciliacao />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Referência pai ainda não sincronizada.");
+    expect(screen.queryByText("Aplicada após reenvio")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Re-enfileirar" }),
+    ).toBeInTheDocument();
+  });
+
   it("informa preservação factual sanitária e oferece o retry público", async () => {
-    vi.mocked(db.queue_ops.where).mockReturnValueOnce({ anyOf: () => ({ toArray: async () => [{
-      client_op_id:"op-fact",client_tx_id:"tx-fact",table:"sanitario_v2",action:"INSERT",sync_state:"REJECTED",
-      record:{domain:"sanitario_v2",command:"apply_factual_core"},
-    }] }) } as never);
-    mockedListRejections.mockResolvedValue({items:[{
-      id:2,fazenda_id:"farm-1",client_tx_id:"tx-fact",client_op_id:"op-fact",table:"sanitario_v2",action:"INSERT",
-      reason_code:"SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH",reason_message:"Revisar identidade do catálogo",created_at:"2026-10-15T00:00:00Z",
-    }],nextCursor:undefined});
-    render(<MemoryRouter><Reconciliacao /></MemoryRouter>);
+    vi.mocked(db.queue_ops.where).mockReturnValueOnce({
+      anyOf: () => ({
+        toArray: async () => [
+          {
+            client_op_id: "op-fact",
+            client_tx_id: "tx-fact",
+            table: "sanitario_v2",
+            action: "INSERT",
+            sync_state: "REJECTED",
+            record: { domain: "sanitario_v2", command: "apply_factual_core" },
+          },
+        ],
+      }),
+    } as never);
+    mockedListRejections.mockResolvedValue({
+      items: [
+        {
+          id: 2,
+          fazenda_id: "farm-1",
+          client_tx_id: "tx-fact",
+          client_op_id: "op-fact",
+          table: "sanitario_v2",
+          action: "INSERT",
+          reason_code: "SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH",
+          reason_message: "Revisar identidade do catálogo",
+          created_at: "2026-10-15T00:00:00Z",
+        },
+      ],
+      nextCursor: undefined,
+    });
+    render(
+      <MemoryRouter>
+        <Reconciliacao />
+      </MemoryRouter>,
+    );
     await screen.findByText("Revisar identidade do catálogo");
-    fireEvent.click(screen.getByRole("button",{name:"Ver detalhes"}));
+    fireEvent.click(screen.getByRole("button", { name: "Ver detalhes" }));
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText(/Fato sanitário preservado neste aparelho/)).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole("button",{name:"Re-enfileirar"}));
-    await waitFor(() => expect(mockedRetryRejectedOperation).toHaveBeenCalledWith(expect.objectContaining({client_op_id:"op-fact"})));
+    expect(
+      within(dialog).getByText(/Fato sanitário preservado neste aparelho/),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Re-enfileirar" }),
+    );
+    await waitFor(() =>
+      expect(mockedRetryRejectedOperation).toHaveBeenCalledWith(
+        expect.objectContaining({ client_op_id: "op-fact" }),
+      ),
+    );
   });
 });

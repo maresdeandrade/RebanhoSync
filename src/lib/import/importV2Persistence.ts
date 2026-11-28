@@ -1,5 +1,6 @@
 import { createGesture, getCreateGestureDiagnostic } from "@/lib/offline/ops";
 import type { OperationInput } from "@/lib/offline/types";
+import { normalizeAnimalIdentifier } from "./animaisCsv";
 import {
   deterministicImportUuid,
   type ImportLineStatus,
@@ -11,7 +12,12 @@ import {
 export type CreateImportGesture = (
   fazendaId: string,
   operations: OperationInput[],
-  options?: { clientTxId?: string; clientOpIds?: readonly string[] },
+  options?: {
+    clientTxId?: string;
+    clientOpIds?: readonly string[];
+    enforceAnimalIdentificationUnique?: boolean;
+    animalIdentificationKey?: (identification: string) => string;
+  },
 ) => Promise<string>;
 
 function toPersistedStatus(
@@ -44,6 +50,12 @@ export async function persistImportV2Preview(
             `${preview.fazendaId}|${preview.importId}|${chunk.chunkId}|line|${lineNumber}`,
           ),
         ),
+        ...(preview.entity === "animais"
+          ? {
+              enforceAnimalIdentificationUnique: true,
+              animalIdentificationKey: normalizeAnimalIdentifier,
+            }
+          : {}),
       });
       chunks.push({
         chunkId: chunk.chunkId,
@@ -65,6 +77,11 @@ export async function persistImportV2Preview(
         typeof errorRecord?.message === "string"
           ? errorRecord.message
           : "Falha de persistência.";
+      const duplicateIdentity =
+        errorRecord?.code === "ANIMAL_IDENTIFICATION_DUPLICATE" &&
+        typeof errorRecord.identification === "string"
+          ? normalizeAnimalIdentifier(errorRecord.identification)
+          : null;
       const diagnostic = getCreateGestureDiagnostic(error);
       const cause =
         error && typeof error === "object" && "cause" in error
@@ -131,14 +148,25 @@ export async function persistImportV2Preview(
           (candidate) => candidate.lineNumber === lineNumber,
         );
         if (item) {
-          item.status = "retryable";
-          item.message = message;
+          const line = preview.lineResults.find(
+            (candidate) => candidate.lineNumber === lineNumber,
+          );
+          const isConflict =
+            duplicateIdentity !== null &&
+            line?.identity !== null &&
+            line?.identity !== undefined &&
+            normalizeAnimalIdentifier(line.identity) === duplicateIdentity;
+          item.status = isConflict ? "conflict" : "retryable";
+          item.message = isConflict
+            ? `Identificação "${line.identity}" foi cadastrada durante a importação.`
+            : message;
         }
       }
     }
   }
 
   const imported = items.filter((item) => item.status === "imported").length;
+  const conflicts = items.filter((item) => item.status === "conflict").length;
   const retryable = items.filter((item) => item.status === "retryable").length;
   const skipped = items.filter((item) => item.status === "skipped").length;
   return {
@@ -149,6 +177,7 @@ export async function persistImportV2Preview(
       ...preview.summary,
       valid: imported,
       imported,
+      conflicts,
       retryable,
       skipped,
     },

@@ -131,13 +131,43 @@ describe("LotesImportar flow", () => {
     });
 
     const importButton = await screen.findByRole("button", {
-      name: /Importar 1 lote\(s\)/i,
+      name: /Importar 0 lote\(s\)/i,
     });
 
     expect(importButton).toBeDisabled();
     expect(
       screen.getByText(/Pasto "Pasto Fantasma" nao encontrado na fazenda ativa\./i),
     ).toBeInTheDocument();
+  });
+
+  it("mostra no botao somente as linhas elegiveis em um arquivo misto", async () => {
+    mockedUseLiveQuery.mockReturnValue([] as ReturnType<typeof useLiveQuery>);
+
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <LotesImportar />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(
+      screen.getByPlaceholderText(/nome;status;pasto;observacoes/i),
+      {
+        target: {
+          value: ["nome;status;pasto", "Matrizes;ativo;", ";ativo;"].join(
+            "\n",
+          ),
+        },
+      },
+    );
+
+    expect(
+      await screen.findByRole("button", { name: /Importar 1 lote\(s\)/i }),
+    ).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: /Importar 2 lote\(s\)/i }),
+    ).not.toBeInTheDocument();
   });
 });
 

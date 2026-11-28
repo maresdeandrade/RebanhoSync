@@ -25,6 +25,7 @@ import {
 } from "@/lib/animals/taxonomyFactsContract";
 import { buildCommercialPurchaseQueueOperation, getPendingCommercialPurchaseRecords } from "@/lib/comercial/animalPurchaseSync";
 import { buildCommercialOperationQueueOperation, getPendingCommercialOperationRecords } from "@/lib/comercial/commercialOperationSync";
+import { normalizeAnimalIdentifier } from "@/lib/animals/registration";
 
 export type CreateGestureDiagnostic = {
   stage: string;
@@ -41,6 +42,15 @@ export type CreateGestureDiagnostic = {
     dexie?: Record<string, unknown>;
   };
 };
+
+export class AnimalIdentificationDuplicateError extends Error {
+  readonly code = "ANIMAL_IDENTIFICATION_DUPLICATE";
+
+  constructor(readonly identification: string) {
+    super("ANIMAL_IDENTIFICATION_DUPLICATE");
+    this.name = "AnimalIdentificationDuplicateError";
+  }
+}
 
 const createGestureDiagnostics = new WeakMap<object, CreateGestureDiagnostic>();
 
@@ -159,6 +169,7 @@ function assertAllowedOfflinePushSurface(op: OperationInput) {
 type CreateGestureOptions = {
   validateContext?: () => void;
   enforceAnimalIdentificationUnique?: boolean;
+  animalIdentificationKey?: (identification: string) => string;
   animalEditBaseline?: Animal;
   animalDraftSubmission?: { userId: string; farmId: string; animalId: string; versionId: string; confirmedVersions?: string[] };
   sanitarioAgendaV2?: readonly SanitarioAgendaCreateDraftV2[];
@@ -271,33 +282,58 @@ function sanitaryGestureStores(hasAgendas: boolean, hasDeathConsequences: boolea
     : [];
 }
 
-async function assertUniqueAnimalIdentifications(fazendaId: string, ops: Operation[]) {
+async function assertUniqueAnimalIdentifications(
+  fazendaId: string,
+  ops: Operation[],
+  identityKey: (identification: string) => string = normalizeAnimalIdentifier,
+) {
   const identifications = ops
     .filter((op) => op.table === "animais" && op.action === "INSERT")
     .map((op) => op.record.identificacao)
     .filter((value): value is string => typeof value === "string");
-  if (new Set(identifications).size !== identifications.length) {
-    throw new Error("ANIMAL_IDENTIFICATION_DUPLICATE");
+  const seenIdentifications = new Set<string>();
+  for (const identification of identifications) {
+    const key = identityKey(identification);
+    if (seenIdentifications.has(key)) {
+      throw new AnimalIdentificationDuplicateError(identification);
+    }
+    seenIdentifications.add(key);
   }
-  const animals = await db.state_animais.where("fazenda_id").equals(fazendaId).toArray();
+  const animals = await db.state_animais
+    .where("fazenda_id")
+    .equals(fazendaId)
+    .toArray();
   const queued = await db.queue_ops.toArray();
   for (const identification of identifications) {
-    if (animals.some((animal) => animal.identificacao === identification)) {
-      throw new Error("ANIMAL_IDENTIFICATION_DUPLICATE");
+    const key = identityKey(identification);
+    if (animals.some((animal) => identityKey(animal.identificacao) === key)) {
+      throw new AnimalIdentificationDuplicateError(identification);
     }
     for (const op of queued) {
       if (op.action !== "INSERT") continue;
-      const pendingAnimals = op.table === "animais"
-        ? [op.record]
-        : op.record.operation_type === "venda"
-          ? []
-          : [...getPendingCommercialOperationRecords(op), ...getPendingCommercialPurchaseRecords(op)]
-              .filter((entry) => entry.table === "animais")
-              .map((entry) => entry.record);
-      if (!pendingAnimals.some((record) => record.fazenda_id === fazendaId && record.identificacao === identification)) continue;
+      const pendingAnimals =
+        op.table === "animais"
+          ? [op.record]
+          : op.record.operation_type === "venda"
+            ? []
+            : [
+                ...getPendingCommercialOperationRecords(op),
+                ...getPendingCommercialPurchaseRecords(op),
+              ]
+                .filter((entry) => entry.table === "animais")
+                .map((entry) => entry.record);
+      if (
+        !pendingAnimals.some(
+          (record) =>
+            record.fazenda_id === fazendaId &&
+            typeof record.identificacao === "string" &&
+            identityKey(record.identificacao) === key,
+        )
+      )
+        continue;
       const gesture = await db.queue_gestures.get(op.client_tx_id);
       if (gesture && !["DONE", "REJECTED"].includes(gesture.status)) {
-        throw new Error("ANIMAL_IDENTIFICATION_DUPLICATE");
+        throw new AnimalIdentificationDuplicateError(identification);
       }
     }
   }
@@ -568,7 +604,11 @@ export const createGesture = async (
         await movement?.verify();
         await assertInventoryFarmContext(fazenda_id, ops_input);
         if (options.enforceAnimalIdentificationUnique) {
-          await assertUniqueAnimalIdentifications(fazenda_id, ops);
+          await assertUniqueAnimalIdentifications(
+            fazenda_id,
+            ops,
+            options.animalIdentificationKey,
+          );
         }
         if (options.animalEditBaseline) {
           await assertAnimalEditBaseline(fazenda_id, options.animalEditBaseline, ops);

@@ -44,7 +44,7 @@ import {
   type RejectionStats,
 } from "@/lib/offline/rejections";
 import { db } from "@/lib/offline/db";
-import type { Operation, Rejection } from "@/lib/offline/types";
+import type { Gesture, Operation, Rejection } from "@/lib/offline/types";
 import { showError, showSuccess } from "@/utils/toast";
 
 const PAGE_SIZE = 20;
@@ -116,6 +116,24 @@ function describeRollback(action: string, operation?: Operation | null) {
     return "Rollback local aplicado: o registro voltou ao estado visivel neste aparelho.";
   }
   return "Rollback local aplicado: o estado anterior foi restaurado neste aparelho.";
+}
+
+function rejectionWasApplied(rejection: Rejection, gesture?: Gesture | null) {
+  return (
+    gesture?.fazenda_id === rejection.fazenda_id &&
+    gesture.client_tx_id === rejection.client_tx_id &&
+    gesture?.status === "DONE" &&
+    (gesture.sync_result === "APPLIED" ||
+      gesture.sync_result === "APPLIED_ALTERED") &&
+    gesture.operation_results?.some(
+      (result) =>
+        result.matched &&
+        result.op_id === rejection.client_op_id &&
+        (result.client_op_id === undefined ||
+          result.client_op_id === rejection.client_op_id) &&
+        (result.status === "APPLIED" || result.status === "APPLIED_ALTERED"),
+    ) === true
+  );
 }
 
 function describeRejectionReasonLabel(reasonCode: string) {
@@ -295,6 +313,9 @@ export default function Reconciliacao() {
   const [operationsById, setOperationsById] = useState<Map<string, Operation>>(
     () => new Map(),
   );
+  const [gesturesByTxId, setGesturesByTxId] = useState<Map<string, Gesture>>(
+    () => new Map(),
+  );
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [stats, setStats] = useState<RejectionStats>({ count: 0 });
   const [isLoading, setIsLoading] = useState(false);
@@ -313,18 +334,28 @@ export default function Reconciliacao() {
         new Set(rejections.map((item) => item.client_tx_id)),
       );
       if (txIds.length === 0) {
-        if (replace) setOperationsById(new Map());
+        if (replace) {
+          setOperationsById(new Map());
+          setGesturesByTxId(new Map());
+        }
         return;
       }
 
-      const ops = await db.queue_ops
-        .where("client_tx_id")
-        .anyOf(txIds)
-        .toArray();
+      const [ops, gestures] = await Promise.all([
+        db.queue_ops.where("client_tx_id").anyOf(txIds).toArray(),
+        db.queue_gestures.bulkGet(txIds),
+      ]);
       setOperationsById((current) => {
         const next = replace ? new Map<string, Operation>() : new Map(current);
         for (const op of ops) {
           next.set(op.client_op_id, op);
+        }
+        return next;
+      });
+      setGesturesByTxId((current) => {
+        const next = replace ? new Map<string, Gesture>() : new Map(current);
+        for (const gesture of gestures) {
+          if (gesture) next.set(gesture.client_tx_id, gesture);
         }
         return next;
       });
@@ -384,24 +415,46 @@ export default function Reconciliacao() {
     [lotes],
   );
   const canRetryRejection = useCallback(
-    (rejection: Rejection, operation?: Operation | null) =>
+    (
+      rejection: Rejection,
+      operation?: Operation | null,
+      gesture?: Gesture | null,
+    ) =>
+      !rejectionWasApplied(rejection, gesture) &&
       !NON_RETRYABLE_REASON_CODES.has(rejection.reason_code) &&
       (!operation ||
         operation.sync_state === "REJECTED" ||
         operation.sync_state === undefined),
     [],
   );
+  const resolvedCount = useMemo(
+    () =>
+      items.filter((item) =>
+        rejectionWasApplied(item, gesturesByTxId.get(item.client_tx_id)),
+      ).length,
+    [items, gesturesByTxId],
+  );
   const retryableCount = useMemo(
     () =>
       items.filter((item) =>
-        canRetryRejection(item, operationsById.get(item.client_op_id)),
+        canRetryRejection(
+          item,
+          operationsById.get(item.client_op_id),
+          gesturesByTxId.get(item.client_tx_id),
+        ),
       ).length,
-    [items, operationsById, canRetryRejection],
+    [items, operationsById, gesturesByTxId, canRetryRejection],
   );
-  const correctionRequiredCount = items.length - retryableCount;
+  const correctionRequiredCount = items.length - retryableCount - resolvedCount;
   const selectedOperation = selectedRejection
     ? (operationsById.get(selectedRejection.client_op_id) ?? null)
     : null;
+  const selectedGesture = selectedRejection
+    ? (gesturesByTxId.get(selectedRejection.client_tx_id) ?? null)
+    : null;
+  const selectedResolved = selectedRejection
+    ? rejectionWasApplied(selectedRejection, selectedGesture)
+    : false;
   const selectedPresentation = selectedRejection
     ? describeOperation(selectedRejection, selectedOperation, lotesById)
     : null;
@@ -409,10 +462,12 @@ export default function Reconciliacao() {
     ? describeRollback(selectedRejection.action, selectedOperation)
     : null;
   const selectedNextStep = selectedRejection
-    ? describeNextStep(selectedRejection)
+    ? selectedResolved
+      ? "Operação aplicada em uma sincronização posterior; a rejeição original permanece apenas como histórico."
+      : describeNextStep(selectedRejection)
     : null;
   const selectedCanRetry = selectedRejection
-    ? canRetryRejection(selectedRejection, selectedOperation)
+    ? canRetryRejection(selectedRejection, selectedOperation, selectedGesture)
     : false;
   const selectedCorrectionAction = selectedRejection
     ? getCorrectionAction(selectedRejection)
@@ -542,6 +597,11 @@ export default function Reconciliacao() {
                 {correctionRequiredCount} corrigir no fluxo
               </StatusBadge>
             ) : null}
+            {resolvedCount > 0 ? (
+              <StatusBadge tone="success">
+                {resolvedCount} aplicada(s) após sincronização
+              </StatusBadge>
+            ) : null}
             {retryableCount > 0 ? (
               <StatusBadge tone="info">{retryableCount} para reenviar</StatusBadge>
             ) : null}
@@ -582,6 +642,11 @@ export default function Reconciliacao() {
               {retryableCount} podem voltar para a fila
             </StatusBadge>
           ) : null}
+          {resolvedCount > 0 ? (
+            <StatusBadge tone="success">
+              {resolvedCount} resolvida(s) após sincronização
+            </StatusBadge>
+          ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -606,13 +671,23 @@ export default function Reconciliacao() {
           {items.map((rejection) => {
             const operation =
               operationsById.get(rejection.client_op_id) ?? null;
+            const resolved = rejectionWasApplied(
+              rejection,
+              gesturesByTxId.get(rejection.client_tx_id),
+            );
             const presentation = describeOperation(
               rejection,
               operation,
               lotesById,
             );
-            const nextStep = describeNextStep(rejection);
-            const canRetry = canRetryRejection(rejection, operation);
+            const nextStep = resolved
+              ? "Operação aplicada em uma sincronização posterior; a rejeição original permanece apenas como histórico."
+              : describeNextStep(rejection);
+            const canRetry = canRetryRejection(
+              rejection,
+              operation,
+              gesturesByTxId.get(rejection.client_tx_id),
+            );
             const correctionAction = getCorrectionAction(rejection);
 
             return (
@@ -631,8 +706,16 @@ export default function Reconciliacao() {
                         <StatusBadge tone="warning">
                           Rollback aplicado
                         </StatusBadge>
-                        <StatusBadge tone={canRetry ? "info" : "warning"}>
-                          {canRetry ? "Pode reenfileirar" : "Corrigir no fluxo"}
+                        <StatusBadge
+                          tone={
+                            resolved ? "success" : canRetry ? "info" : "warning"
+                          }
+                        >
+                          {resolved
+                            ? "Aplicada após reenvio"
+                            : canRetry
+                              ? "Pode reenfileirar"
+                              : "Corrigir no fluxo"}
                         </StatusBadge>
                         <StatusBadge tone="neutral">
                           {rejection.action}
@@ -662,7 +745,7 @@ export default function Reconciliacao() {
                   <div className="grid gap-3 lg:grid-cols-2">
                     <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                       <p className="text-xs uppercase text-muted-foreground">
-                        Servidor rejeitou
+                        {resolved ? "Rejeição original" : "Servidor rejeitou"}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-foreground">
                         {rejection.reason_message}
@@ -671,7 +754,7 @@ export default function Reconciliacao() {
 
                     <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                       <p className="text-xs uppercase text-muted-foreground">
-                        Proximo passo seguro
+                        {resolved ? "Status atual" : "Proximo passo seguro"}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-foreground">
                         {nextStep}
@@ -698,17 +781,17 @@ export default function Reconciliacao() {
                           <RefreshCw className="mr-2 h-4 w-4" />
                           Re-enfileirar
                         </Button>
-                      ) : correctionAction ? (
+                      ) : !resolved && correctionAction ? (
                         <Button asChild size="sm">
                           <Link to={correctionAction.href}>
                             {correctionAction.label}
                           </Link>
                         </Button>
-                      ) : (
+                      ) : !resolved ? (
                         <Button size="sm" disabled>
                           Corrigir fora desta tela
                         </Button>
-                      )}
+                      ) : null}
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -838,7 +921,7 @@ export default function Reconciliacao() {
 
               <div className="space-y-1">
                 <p className="text-xs uppercase text-muted-foreground">
-                  Proximo passo seguro
+                  {selectedResolved ? "Status atual" : "Proximo passo seguro"}
                 </p>
                 <p className="leading-6 text-muted-foreground">
                   {selectedNextStep}
@@ -880,7 +963,7 @@ export default function Reconciliacao() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Re-enfileirar
               </Button>
-            ) : selectedCorrectionAction ? (
+            ) : !selectedResolved && selectedCorrectionAction ? (
               <Button asChild variant="outline">
                 <Link
                   to={selectedCorrectionAction.href}
@@ -889,11 +972,11 @@ export default function Reconciliacao() {
                   {selectedCorrectionAction.label}
                 </Link>
               </Button>
-            ) : (
+            ) : !selectedResolved ? (
               <Button variant="outline" disabled>
                 Corrigir fora desta tela
               </Button>
-            )}
+            ) : null}
             <Button
               variant="destructive"
               onClick={() => {

@@ -1,7 +1,10 @@
 import type { OrigemEnum, SexoEnum } from "@/lib/offline/types";
 import { parseAnimalBreed } from "@/lib/animals/catalogs";
+import { normalizeAnimalIdentifier } from "@/lib/animals/registration";
 import { parseAnimalSpecies } from "@/lib/animals/species";
 import type { AnimalSpeciesEnum } from "@/lib/animals/species";
+
+export { normalizeAnimalIdentifier };
 
 export type AnimalImportRow = {
   lineNumber: number;
@@ -100,10 +103,6 @@ export function normalizeLookupValue(value: string) {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ");
-}
-
-export function normalizeAnimalIdentifier(value: string) {
-  return normalizeLookupValue(value).replace(/\s+/g, "");
 }
 
 function detectDelimiter(text: string): "," | ";" | "\t" {

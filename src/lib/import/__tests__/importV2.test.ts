@@ -77,6 +77,26 @@ describe("Importação V2 — preview e contrato", () => {
     });
   });
 
+  it("ordena progenitores importados antes das crias independentemente das linhas", () => {
+    const preview = previewAnimalsImportV2({
+      entity: "animais",
+      fazendaId: "farm-1",
+      rawText: [
+        "identificacao;sexo;pai",
+        "J07-REC-001;F;J07-SIRE-001",
+        "J07-SIRE-001;M;",
+      ].join("\n"),
+      existing: { animais: [], lotes: [] },
+      lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+    });
+
+    expect(preview.summary).toMatchObject({ valid: 2, rejected: 0 });
+    expect(
+      preview.operations.map((operation) => operation.record.identificacao),
+    ).toEqual(["J07-SIRE-001", "J07-REC-001"]);
+    expect(preview.chunks[0]?.lineNumbers).toEqual([3, 2]);
+  });
+
   it("separa linha válida de linha inválida e fornece código por linha/campo", () => {
     const preview = previewAnimalsImportV2({
       entity: "animais",
@@ -108,6 +128,56 @@ describe("Importação V2 — preview e contrato", () => {
         }),
       ]),
     );
+  });
+
+  it("preserva origem cadastral de compra sem criar uma operação comercial", () => {
+    const preview = previewAnimalsImportV2({
+      entity: "animais",
+      fazendaId: "farm-1",
+      rawText: [
+        "identificacao;sexo;lote;data_nascimento;data_entrada;origem",
+        "A-002;F;Matrizes;2024-01-15;;nascimento",
+        "A-003;F;Matrizes;2024-01-15;2024-02-01;compra",
+      ].join("\n"),
+      existing: { animais: [], lotes: [lote({})] },
+      lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+    });
+
+    expect(preview.summary).toMatchObject({ valid: 2, rejected: 0 });
+    expect(preview.operations).toHaveLength(2);
+    expect(
+      preview.operations.every((operation) => operation.table === "animais"),
+    ).toBe(true);
+    expect(preview.operations[1]?.record).toMatchObject({
+      identificacao: "A-003",
+      origem: "compra",
+      data_entrada: "2024-02-01",
+    });
+  });
+
+  it("rejeita entrada anterior ao nascimento na prévia por linha", () => {
+    const preview = previewAnimalsImportV2({
+      entity: "animais",
+      fazendaId: "farm-1",
+      rawText: [
+        "identificacao;sexo;lote;data_nascimento;data_entrada;origem",
+        "A-002;F;Matrizes;2023-03-14;2022-06-15;doacao",
+      ].join("\n"),
+      existing: { animais: [], lotes: [lote({})] },
+      lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+    });
+
+    expect(preview.summary).toMatchObject({ valid: 0, rejected: 1 });
+    expect(preview.lineResults[0]).toMatchObject({
+      lineNumber: 2,
+      status: "rejected",
+      issues: [
+        expect.objectContaining({
+          field: "data_entrada",
+          code: "DATE_ORDER_INVALID",
+        }),
+      ],
+    });
   });
 
   it("explicita referências ausentes, conflito de RFID e duplicidade existente", () => {

@@ -123,10 +123,23 @@ const AnimaisImportar = () => {
           retryable: result.summary.retryable,
         },
       });
-      if (result.summary.retryable > 0) {
-        showError(
-          `${result.summary.retryable} linha(s) aguardam retry; as demais foram processadas.`,
-        );
+      const newConflicts = Math.max(
+        0,
+        result.summary.conflicts - preview.summary.conflicts,
+      );
+      if (result.summary.retryable > 0 || newConflicts > 0) {
+        const messages = [];
+        if (newConflicts > 0) {
+          messages.push(
+            `${newConflicts} linha(s) entraram em conflito após a prévia; revise os dados antes de tentar novamente.`,
+          );
+        }
+        if (result.summary.retryable > 0) {
+          messages.push(
+            `${result.summary.retryable} linha(s) aguardam retry; as demais foram processadas.`,
+          );
+        }
+        showError(messages.join(" "));
         return;
       }
       showSuccess(

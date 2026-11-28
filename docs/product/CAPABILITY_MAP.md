@@ -233,6 +233,10 @@ Cálculos de ocupação, permanência, lotação e ganho de peso são parciais e
 
 Importação V2 de animais, lotes e pastos está integrada como capacidade técnica. Os três fluxos usam preview/validação, processamento em chunks e `persistImportV2Preview`, que persiste via `createGesture` offline-first, com IDs determinísticos de operação/transação e resultados explícitos de sucesso parcial/retryable. Reapresentar o mesmo preview permite retry idempotente dentro desses limites; isso não comprova checkpoint durável de retomada após reinício, rollback global entre chunks ou recuperação integral.
 
+Na validação J07, a dependência genealógica foi corrigida para processar progenitores antes das crias. A unicidade normalizada recebeu proteção transacional local por `fazenda_id`, mas colisões concorrentes entre dispositivos não são garantidas pela constraint remota exata. A reconciliação distingue a rejeição pela operação exata — fazenda, gesto e identificador da operação — em vez de resolver outra operação aplicada sobre o mesmo animal.
+
+Registros sintéticos da jornada atingiram 31 animais, quatro lotes e quatro pastos na Fazenda Horizonte, com 100 hectares. Persistência por chunk e aplicação após reconexão foram comprovadas em recorte funcional. Cold start totalmente offline não foi aprovado porque o app shell não estava disponível sem rede; essa limitação pertence à J29 e não introduz PWA/service worker. [PR #312](https://github.com/maresdeandrade/RebanhoSync/pull/312) permanece aberta; integração técnica não autoriza rollout ou homologação.
+
 A proposta complementar não foi aprovada como decisão de produto e não torna a importação requisito de aceite do núcleo do MVP. Importação sanitária real permanece separada e gateada; integração técnica da importação não comprova rollout remoto.
 
 ---

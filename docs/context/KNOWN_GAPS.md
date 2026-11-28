@@ -1,6 +1,6 @@
 # Known Gaps — RebanhoSync
 
-Atualizado em: 2026-11-21
+Atualizado em: 2026-11-27
 **Baseline documental original:** `93c3d1dd8401488139454c69c2a6595ae46abaa5`
 
 ## Reconciliação das lacunas — 18/11/2026
@@ -17,6 +17,12 @@ As lacunas técnicas/curatoriais por produto e finalidade permanecem individuali
 - **Evolução candidata:** 12 recomendações consolidadas de contexto, ajuda, formulários, estados vazios e informação operacional. Etapas produtivas, área pecuária e preferências de indicadores dependem de validação; não são novos obrigatórios.
 
 Os 26 grupos e suas origens permanecem em `.work/block1/consolidated-matrix.*`, sem duplicação aqui. [Inventário/evidência de integração](../review/evidence/BLOCK1_INTEGRATION_20261121.json); [guia operacional](../manuals/USER_MANUAL_INDEX.md). As jornadas futuras e seus gates anteriores não são certificados por este recorte.
+
+## Importação coletiva J07 — lacunas preservadas
+
+- **Offline cold start:** Não confirmado. A recarga totalmente offline não abriu o app shell sem rede; isso não indica perda de dados no IndexedDB. PWA/service worker não fazem parte da J07 e ficam para J29.
+- **Unicidade normalizada remota:** Parcial. J07 certificou proteção local/transacional por `fazenda_id` entre cadastro individual e importação, reimportação, prévia obsoleta e replay. A constraint remota exata não foi alterada e colisões normalizadas concorrentes entre dispositivos não foram certificadas.
+- **Rollout da Importação V2:** Não confirmado como homologação/remoto. Persistência por chunk e aplicação após reconexão foram validadas localmente; checkpoint durável após reinício, rollback global e recuperação integral não foram certificados além do recorte J07.
 
 ## Objetivo
 

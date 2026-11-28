@@ -1,6 +1,6 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-11-21
+Atualizado em: 2026-11-27
 
 Status: **Fase 24 ativa; F24.5 e F24.6A1 CLOSED / INTEGRATED no escopo certificado; F24.6 ACTIVE**
 Próxima fase: **Fase 24 — mantida; nenhuma próxima frente definida nesta consolidação documental.** Implementação, curadoria e publicação produto–classe encerradas; sem nova fase ou certificação automática.
@@ -26,6 +26,23 @@ registrados nessa baseline histórica. A publicação técnica delimitada da #30
 stale foi fechado em 05/10/2026 conforme a [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Nenhuma frente posterior deve ser iniciada automaticamente.
 
 ## Continuidade reconciliada — 20/11/2026
+
+Em 27/11/2026, a J07 foi encerrada tecnicamente na [PR #312](https://github.com/maresdeandrade/RebanhoSync/pull/312),
+na branch `codex/j07-collective-import`. A entrega corrigiu integridade genealógica,
+unicidade local, reconciliação por operação exata e contagem elegível de lotes. O estado
+O estado sintético preservado é 31 animais, quatro lotes e quatro pastos na Fazenda Horizonte.
+CI obrigatória passou no HEAD `2d85fea61a1463b6a4e20a09439388aa4817856f`. A branch recebeu
+localmente `origin/main` em `e49be5722e36c9379c3d4b00c43f4021d9864ea2e4` para resolver os
+conflitos; o HEAD combinado requer nova CI e a PR #312 não foi integrada.
+
+Limites preservados: unicidade normalizada remota não certificada, cold start offline não
+aprovado e UX não bloqueante fora da consolidação posterior. J29 permanece responsável pela
+certificação do app shell; J08 não iniciou.
+
+A [PR #311](https://github.com/maresdeandrade/RebanhoSync/pull/311), integrada em
+`e49be5722e36c9379c3d4b00c43f4021d9864ea2e4`, também entrou no mesmo período, mas em
+escopo separado de apresentação de fazenda e sincronização. Não foi considerada validação
+da Importação V2 nem incorporada ao delta J07.
 
 Recorte Bloco 1 J01–J05: correções locais e consolidação concluídas, com
 [evidência e limites](../context/PROJECT_STATUS.md#estado-atual). Integração e publicação

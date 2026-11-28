@@ -31,6 +31,15 @@ export interface AnimalRegistrationDraft {
   preparedPayload?: boolean;
 }
 
+export function normalizeAnimalIdentifier(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
+}
+
 export function validateAnimalRegistrationDraft(
   draft: AnimalRegistrationDraft,
   referenceDate = new Date(),
@@ -48,6 +57,13 @@ export function validateAnimalRegistrationDraft(
     const parsed = new Date(`${value}T12:00:00.000Z`);
     if (Number.isNaN(parsed.getTime()) || parsed > referenceDay) {
       return `${label} não pode ser inválida ou futura.`;
+    }
+  }
+  if (draft.dataNascimento && draft.dataEntrada) {
+    const birthDate = new Date(`${draft.dataNascimento}T12:00:00.000Z`);
+    const entryDate = new Date(`${draft.dataEntrada}T12:00:00.000Z`);
+    if (entryDate < birthDate) {
+      return "Data de entrada não pode anteceder a data de nascimento.";
     }
   }
   return null;
