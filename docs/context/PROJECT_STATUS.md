@@ -40,6 +40,12 @@ quatro lotes e quatro pastos na Fazenda Horizonte, totalizando 100 hectares. Per
 local por chunk e aplicação após reconexão foram demonstradas. Os fluxos não criam Eventos
 artificiais para cadastro ou origem cadastral como `compra`.
 
+No mesmo período, a [PR #311](https://github.com/maresdeandrade/RebanhoSync/pull/311),
+`fix: clarify farm setup and synchronization status`, foi integrada pelo merge
+`e49be5722e36c9379c3d4b00c43f4021d9864ea2e4`. A #311 tem escopo separado de apresentação
+de configuração da fazenda e sincronização; não faz parte do patch J07 nem altera
+gênese, migrations, RLS, RPC ou sync-batch da Importação V2.
+
 Os testes focados J07 e a correção pontual posterior passaram em 51 + 15 recortes
 especificamente aplicáveis; `git diff --check` passou e a CI obrigatória passou no novo HEAD.
 A proteção de unicidade normalizada permanece local/transacional e escopada por

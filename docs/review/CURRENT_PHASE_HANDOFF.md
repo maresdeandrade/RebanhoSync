@@ -52,6 +52,11 @@ foram certificadas remotamente; cold start totalmente offline não passou porque
 não estava disponível sem rede. PWA, service worker, migrations, RLS, RPC e sync-batch não
 foram alterados. A pendência de cold start pertence à J29. Não houve merge ou J08.
 
+Em paralelo, a [PR #311](https://github.com/maresdeandrade/RebanhoSync/pull/311),
+`fix: clarify farm setup and synchronization status`, foi integrada pelo merge
+`e49be5722e36c9379c3d4b00c43f4021d9864ea2e4`. Ela não integra o diff da J07 e não
+certifica nem altera os limites remotos da Importação V2.
+
 ## Integração J04 e Bloco 1 — 21/11/2026
 
 Bloco 1 J01–J05 consolidado e corrigido localmente sobre a worktree J04 não integrada;

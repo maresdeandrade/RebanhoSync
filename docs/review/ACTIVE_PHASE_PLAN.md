@@ -37,6 +37,11 @@ Limites preservados: unicidade normalizada remota não certificada, cold start o
 aprovado e UX não bloqueante fora da consolidação posterior. J29 permanece responsável pela
 certificação do app shell; J08 não iniciou.
 
+A [PR #311](https://github.com/maresdeandrade/RebanhoSync/pull/311), integrada em
+`e49be5722e36c9379c3d4b00c43f4021d9864ea2e4`, também entrou no mesmo período, mas em
+escopo separado de apresentação de fazenda e sincronização. Não foi considerada validação
+da Importação V2 nem incorporada ao delta J07.
+
 Recorte Bloco 1 J01–J05: correções locais e consolidação concluídas, com
 [evidência e limites](../context/PROJECT_STATUS.md#estado-atual). Integração e publicação
 das migrations J04/`20261121023104` e do frontend permanecem pendentes de autorização.
